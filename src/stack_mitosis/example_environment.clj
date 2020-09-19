@@ -2,6 +2,7 @@
   (:require [stack-mitosis.helpers :as helpers]
             [stack-mitosis.operations :as op]
             [stack-mitosis.planner :as plan]
+            [stack-mitosis.policy :as policy]
             [stack-mitosis.predict :as predict]))
 
 (def template
@@ -53,4 +54,6 @@
     (concat (plan/delete-tree state "mitosis-demo")
             (plan/delete-tree state "mitosis-prod"))))
 
-
+(comment
+  (policy/generate [] (create template))
+  (policy/generate [] (destroy)))
