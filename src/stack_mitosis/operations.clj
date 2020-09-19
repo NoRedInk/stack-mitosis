@@ -43,9 +43,11 @@
   {:op :PromoteReadReplica
    :request {:DBInstanceIdentifier id}})
 
-(defn describe [id]
-  {:op :DescribeDBInstances
-   :request {:DBInstanceIdentifier id}})
+(defn describe
+  ([] {:op :DescribeDBInstances})
+  ([id]
+   {:op :DescribeDBInstances
+    :request {:DBInstanceIdentifier id}}))
 
 (defn tags [db-arn]
   {:op :ListTagsForResource

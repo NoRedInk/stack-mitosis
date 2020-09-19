@@ -37,7 +37,7 @@
 (defn databases
   [rds]
   {:post [(seq %)]}
-  (:DBInstances (invoke-logged! rds {:op :DescribeDBInstances})))
+  (:DBInstances (invoke-logged! rds (op/describe))))
 
 ;; TODO: verify that "old-" database copies do not exist before running
 (defn verify-databases-exist
