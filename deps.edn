@@ -29,11 +29,11 @@
                         lambdaisland/kaocha-junit-xml {:mvn/version "0.0.76"}
                         lambdaisland/kaocha-cloverage {:mvn/version "1.0.75"}}}
 
-  ;; clj -Aclj-kondo --lint src
+  ;; clj -Mclj-kondo --lint src
   :clj-kondo
-  {:extra-deps {clj-kondo {:mvn/version "RELEASE"}}
+  {:extra-deps {clj-kondo/clj-kondo {:mvn/version "RELEASE"}}
    :main-opts ["-m" "clj-kondo.main"]}
 
-  ;; clj -Acoverage
-  :coverage {:extra-deps {cloverage {:mvn/version "RELEASE"}}
+  ;; clj -Mcoverage
+  :coverage {:extra-deps {cloverage/cloverage {:mvn/version "RELEASE"}}
              :main-opts ["-m" "cloverage.coverage" "-p" "src"]}}}
