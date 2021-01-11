@@ -23,11 +23,7 @@
   }
  :paths ["src" "resources"]
  :aliases
- {;; clj -Aoutdated
-  :outdated {:extra-deps {olical/depot {:mvn/version "RELEASE"}}
-             :main-opts ["-m" "depot.outdated.main"]}
-
-  ;; clj -A:kaocha -m kaocha.runner --config-file test/tests.edn
+ {;; clj -A:kaocha -m kaocha.runner --config-file test/tests.edn
   :kaocha {:extra-paths ["test"]
            :extra-deps {lambdaisland/kaocha {:mvn/version "1.0.732"}
                         lambdaisland/kaocha-junit-xml {:mvn/version "0.0.76"}
