@@ -51,11 +51,13 @@
                                  :SourceDBInstanceIdentifier "root"
                                  :Port 123}})))
     (testing "propagate only *some* instance fields to replica"
-      (let [root {:DBInstanceIdentifier "root" :BackupRetentionPeriod 1
+      (let [root {:DBInstanceIdentifier "root"
+                  :DBInstanceArn "arn:aws:rds:us-west-2:1234567:db:root"
                   :ReadReplicaDBInstanceIdentifiers ["other-clone"]
-                  :Port 123}]
+                  :Port 123 :BackupRetentionPeriod 1}]
         (is (= [(update-in root [:ReadReplicaDBInstanceIdentifiers] conj "clone")
-                {:DBInstanceIdentifier "clone" :ReadReplicaSourceDBInstanceIdentifier "root" :Port 123}]
+                {:DBInstanceIdentifier "clone" :DBInstanceArn "arn:aws:rds:us-west-2:1234567:db:clone"
+                 :ReadReplicaSourceDBInstanceIdentifier "root" :Port 123}]
                (p/predict [root] (op/create-replica "root" "clone"))))))))
 
 (deftest delete

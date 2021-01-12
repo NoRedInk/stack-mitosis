@@ -1,6 +1,7 @@
 (ns stack-mitosis.predict
   (:require [stack-mitosis.lookup :as lookup]
-            [stack-mitosis.request :as r]))
+            [stack-mitosis.request :as r]
+            [clojure.string :as str]))
 
 (defn attach
   [db child-id]
@@ -11,6 +12,11 @@
   [db child-id]
   (update db :ReadReplicaDBInstanceIdentifiers
           (partial remove #(= % child-id))))
+
+(defn predict-arn [instance arn parent-id child-id]
+  (if arn
+    (assoc instance :DBInstanceArn (str/replace arn parent-id child-id))
+    instance))
 
 (defmulti predict
   "Predict contents of instances db after applying operation to instances.
@@ -48,7 +54,8 @@
               (assoc :ReadReplicaSourceDBInstanceIdentifier parent)
               ;; remove sources replica list for new replica, and reset backup
               ;; retention to match what AWS does.
-              (dissoc :ReadReplicaDBInstanceIdentifiers :BackupRetentionPeriod)))))
+              (dissoc :ReadReplicaDBInstanceIdentifiers :BackupRetentionPeriod)
+              (predict-arn (:DBInstanceArn source) parent child)))))
 
 (defmethod predict :PromoteReadReplica
   [instances op]
