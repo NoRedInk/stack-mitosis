@@ -17,4 +17,6 @@
         resources (group-by :op all-permissions)]
     {:effect "Allow"
      :action (keys resources)
-     :resource (distinct (mapcat :arn resources))}))
+     :resource (distinct (mapcat :arn resources))
+     ;; :raw [all-permissions resources]
+     }))
