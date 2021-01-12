@@ -7,7 +7,8 @@
     (if-let [instance (lookup/by-id instances db-id)]
       {:op (:op action)
        :arn (:DBInstanceArn instance)}
-      {:op (:op action)})
+      {:op (:op action)
+       :arn "fake arn"})
     ;; TODO handle ResourceName for ListTagsForResource
     ;; TODO Exclude shell command, and include top level describe?
     {:op (:op action)}))
@@ -17,6 +18,4 @@
         resources (group-by :op all-permissions)]
     {:effect "Allow"
      :action (keys resources)
-     :resource (distinct (mapcat :arn resources))
-     ;; :raw [all-permissions resources]
-     }))
+     :resource (distinct (map :arn (flatten (vals resources))))}))

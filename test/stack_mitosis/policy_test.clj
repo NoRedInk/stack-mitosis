@@ -16,7 +16,7 @@
 
 (deftest permissions
   (let [instance {:DBInstanceIdentifier "foo" :DBInstanceArn "arn:aws:rds:us-east-1"}]
-    (is (= {:op :DeleteDBInstance}
+    (is (= {:op :DeleteDBInstance :arn "fake arn"}
            (sut/permissions [] (op/delete "foo")))
         "only operation if instance is not found")
     (is (= {:op :DeleteDBInstance :arn "arn:aws:rds:us-east-1"}
@@ -30,6 +30,6 @@
   (is (= {:effect "Allow"
           :action [:CreateDBInstanceReadReplica :PromoteReadReplica :ModifyDBInstance :DeleteDBInstance]
           ;; FIXME: note that create db, promote, and modify may have a different set of resource permissions from delete
-          :resource []}
+          :resource ["fake arn" "staging-replica-arn" "staging-arn"]}
          (sut/generate (example-instances)
                        (plan/replace-tree (example-instances) "production" "staging")))))
