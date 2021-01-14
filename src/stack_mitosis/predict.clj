@@ -13,9 +13,15 @@
   (update db :ReadReplicaDBInstanceIdentifiers
           (partial remove #(= % child-id))))
 
-(defn predict-arn [instance arn parent-id child-id]
+(defn predict-arn
+  "Replace the database identifier at the end of the ARN with a new value.
+
+  See https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_Tagging.ARN.html
+  for documentation on RDS specific ARN generation."
+  [instance arn parent-id child-id]
   (if arn
-    (assoc instance :DBInstanceArn (str/replace arn parent-id child-id))
+    (assoc instance :DBInstanceArn
+           (str/replace arn (re-pattern (str ":" parent-id "$")) (str ":" child-id)))
     instance))
 
 (defmulti predict
@@ -79,7 +85,9 @@
         parent (lookup/parent instances current-id)]
     (letfn [(new-name [db]
               (merge (if new-id
-                       (assoc db :DBInstanceIdentifier new-id)
+                       (predict-arn (assoc db :DBInstanceIdentifier new-id)
+                                    (:DBInstanceArn db)
+                                    current-id new-id)
                        db)
                      ;; merge in everything else in request
                      (dissoc (:request op)

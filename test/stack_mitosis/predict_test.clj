@@ -13,13 +13,14 @@
                                    (op/create {:DBInstanceIdentifier "a"})))))
 
 (deftest modify
-  (let [instances [{:DBInstanceIdentifier "a"}
-                   {:DBInstanceIdentifier "b"}]]
-    (is (= [{:DBInstanceIdentifier "a"}
-            {:DBInstanceIdentifier "new-name"}]
+  (let [instances [{:DBInstanceIdentifier "a" :DBInstanceArn "db:a"}
+                   {:DBInstanceIdentifier "b" :DBInstanceArn "db:b"}]]
+    (is (= [{:DBInstanceIdentifier "a" :DBInstanceArn "db:a"}
+            {:DBInstanceIdentifier "new-name" :DBInstanceArn "db:new-name"}]
            (p/predict instances (op/rename "b" "new-name"))))
-    (is (= [{:DBInstanceIdentifier "a"}
-            {:DBInstanceIdentifier "b" :MultiAZ true}]
+    (is (= [{:DBInstanceIdentifier "a" :DBInstanceArn "db:a"}
+            {:DBInstanceIdentifier "b" :DBInstanceArn "db:b"
+             :MultiAZ true}]
            (p/predict instances
                       (op/modify "b" {:MultiAZ true}))))))
 
