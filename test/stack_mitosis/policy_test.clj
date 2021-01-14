@@ -4,22 +4,25 @@
             [stack-mitosis.policy :as sut]
             [stack-mitosis.planner :as plan]))
 
+(defn make-arn [name]
+  (str "arn:aws:rds:us-east-1:1234567:db:" name))
+
 (defn example-instances []
   [{:DBInstanceIdentifier "production" :ReadReplicaDBInstanceIdentifiers ["production-replica"]
-    :DBInstanceArn "production-arn"}
+    :DBInstanceArn (make-arn "production")}
    {:DBInstanceIdentifier "production-replica" :ReadReplicaSourceDBInstanceIdentifier "production"
-    :DBInstanceArn "production-replica-arn"}
+    :DBInstanceArn (make-arn "production-replica")}
    {:DBInstanceIdentifier "staging" :ReadReplicaDBInstanceIdentifiers ["staging-replica"]
-    :DBInstanceArn "staging-arn"}
+    :DBInstanceArn (make-arn "staging")}
    {:DBInstanceIdentifier "staging-replica" :ReadReplicaSourceDBInstanceIdentifier "staging"
-    :DBInstanceArn "staging-replica-arn"}])
+    :DBInstanceArn (make-arn "staging-replica")}])
 
 (deftest permissions
-  (let [instance {:DBInstanceIdentifier "foo" :DBInstanceArn "arn:aws:rds:us-east-1"}]
-    (is (= {:op :DeleteDBInstance :arn "fake arn"}
-           (sut/permissions [] (op/delete "foo")))
+  (let [instance {:DBInstanceIdentifier "foo" :DBInstanceArn (make-arn "foo")}]
+    (is (= {:op :DeleteDBInstance :arn (make-arn "foo")}
+           (sut/permissions [instance] (op/delete "foo")))
         "only operation if instance is not found")
-    (is (= {:op :DeleteDBInstance :arn "arn:aws:rds:us-east-1"}
+    (is (= {:op :DeleteDBInstance :arn (make-arn "foo")}
            (sut/permissions [instance] (op/delete "foo")))
         "operation and arn if instance is found")
     (is (= {:op :DescribeDBInstances}
@@ -30,6 +33,11 @@
   (is (= {:effect "Allow"
           :action [:CreateDBInstanceReadReplica :PromoteReadReplica :ModifyDBInstance :DeleteDBInstance]
           ;; FIXME: note that create db, promote, and modify may have a different set of resource permissions from delete
-          :resource ["fake arn" "staging-replica-arn" "staging-arn"]}
+          :resource [(sut/make-wildcard-arn "temp-staging")
+                     (sut/make-wildcard-arn "temp-staging-replica")
+                     (make-arn "staging-replica")
+                     (make-arn "staging")
+                     (sut/make-wildcard-arn "old-staging-replica")
+                     (sut/make-wildcard-arn "old-staging")]}
          (sut/generate (example-instances)
                        (plan/replace-tree (example-instances) "production" "staging")))))
