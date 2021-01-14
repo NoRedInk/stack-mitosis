@@ -85,9 +85,9 @@
         parent (lookup/parent instances current-id)]
     (letfn [(new-name [db]
               (merge (if new-id
-                       (predict-arn (assoc db :DBInstanceIdentifier new-id)
-                                    (:DBInstanceArn db)
-                                    current-id new-id)
+                       (-> db
+                           (assoc :DBInstanceIdentifier new-id)
+                           (predict-arn (:DBInstanceArn db) current-id new-id))
                        db)
                      ;; merge in everything else in request
                      (dissoc (:request op)
