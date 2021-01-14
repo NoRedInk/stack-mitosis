@@ -33,11 +33,11 @@
   (is (= {:effect "Allow"
           :action [:CreateDBInstanceReadReplica :PromoteReadReplica :ModifyDBInstance :DeleteDBInstance]
           ;; FIXME: note that create db, promote, and modify may have a different set of resource permissions from delete
-          :resource [(sut/make-wildcard-arn "temp-staging")
-                     (sut/make-wildcard-arn "temp-staging-replica")
+          :resource [(make-arn "temp-staging")
+                     (make-arn "temp-staging-replica")
                      (make-arn "staging-replica")
                      (make-arn "staging")
-                     (sut/make-wildcard-arn "old-staging-replica")
-                     (sut/make-wildcard-arn "old-staging")]}
+                     (make-arn "old-staging-replica")
+                     (make-arn "old-staging")]}
          (sut/generate (example-instances)
                        (plan/replace-tree (example-instances) "production" "staging")))))
