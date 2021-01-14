@@ -41,10 +41,13 @@
                           (p/predict [] (op/promote "root"))))))
 
 (deftest create-replica
-  (let [instances [{:DBInstanceIdentifier "root" :MultiAZ false}]]
+  (let [instances [{:DBInstanceIdentifier "root" :DBInstanceArn "db:root"
+                    :MultiAZ false}]]
     (is (= [{:DBInstanceIdentifier "root" :MultiAZ false
+             :DBInstanceArn "db:root"
              :ReadReplicaDBInstanceIdentifiers ["replica"]}
             {:DBInstanceIdentifier "replica" :MultiAZ false :Port 123
+             :DBInstanceArn "db:replica"
              :ReadReplicaSourceDBInstanceIdentifier "root"}]
            (p/predict instances
                       {:op :CreateDBInstanceReadReplica
