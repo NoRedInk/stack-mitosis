@@ -34,6 +34,9 @@
    :action actions
    :resource resources})
 
+(defn globals []
+  (allow [:DescribeDBInstances :ListTagsForResource] ["arn:aws:rds:*"]))
+
 ;; TODO breakup permissions per operation type with better granularity
 ;; ie Delete should only have permissions on old-, not temp- or current staging.
 (defn generate [instances operations]
