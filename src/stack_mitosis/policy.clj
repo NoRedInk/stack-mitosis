@@ -27,15 +27,19 @@
     ;; TODO Exclude shell command, and include top level describe?
     {:op (:op action)}))
 
+;; TODO possibly generate optional statement identifier?
+;; TODO simplify action/resource to singular if only one value?
+(defn allow [actions resources]
+  {:effect "Allow"
+   :action actions
+   :resource resources})
+
 ;; TODO breakup permissions per operation type with better granularity
 ;; ie Delete should only have permissions on old-, not temp- or current staging.
 (defn generate [instances operations]
   (let [all-permissions
         (map permissions
              (reductions predict/predict instances operations)
-             operations)
-
-        resources (group-by :op all-permissions)]
-    {:effect "Allow"
-     :action (keys resources)
-     :resource (distinct (map :arn (flatten (vals resources))))}))
+             operations)]
+    (for [[op ops] (group-by :op all-permissions)]
+      (allow [op] (distinct (map :arn ops))))))

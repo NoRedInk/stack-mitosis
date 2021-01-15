@@ -29,15 +29,16 @@
            (sut/permissions [] (op/describe)))
         "operation only if no database identifier in request")))
 
+;; TODO: how to incorporate permissions for ListTags and DescribeDBInstances
+;; also how to create policy for example environment creation?
 (deftest generate
-  (is (= {:effect "Allow"
-          :action [:CreateDBInstanceReadReplica :PromoteReadReplica :ModifyDBInstance :DeleteDBInstance]
-          ;; FIXME: note that create db, promote, and modify may have a different set of resource permissions from delete
-          :resource [(make-arn "temp-staging")
-                     (make-arn "temp-staging-replica")
-                     (make-arn "staging-replica")
-                     (make-arn "staging")
-                     (make-arn "old-staging-replica")
-                     (make-arn "old-staging")]}
+  (is (= [(sut/allow [:CreateDBInstanceReadReplica]
+                     [(make-arn "temp-staging") (make-arn "temp-staging-replica")])
+          (sut/allow [:PromoteReadReplica]
+                     [(make-arn "temp-staging")])
+          (sut/allow [:ModifyDBInstance]
+                     (mapv make-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"]))
+          (sut/allow [:DeleteDBInstance]
+                     (mapv make-arn ["old-staging-replica" "old-staging"]))]
          (sut/generate (example-instances)
                        (plan/replace-tree (example-instances) "production" "staging")))))
