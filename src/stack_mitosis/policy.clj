@@ -31,7 +31,7 @@
 ;; TODO simplify action/resource to singular if only one value?
 (defn allow [actions resources]
   {:effect "Allow"
-   :action actions
+   :action (mapv (partial str "rds") actions)
    :resource resources})
 
 (defn globals []
