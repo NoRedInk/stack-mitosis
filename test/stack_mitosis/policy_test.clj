@@ -34,7 +34,7 @@
 ;; TODO: handle possible need for RebootInstance if renaming with ApplyImmediatly?
 (deftest generate
   (is (= [(sut/allow [:CreateDBInstanceReadReplica]
-                     [(make-arn "temp-staging") (make-arn "temp-staging-replica")])
+                     (mapv make-arn ["temp-staging" "temp-staging-replica"]))
           (sut/allow [:PromoteReadReplica]
                      [(make-arn "temp-staging")])
           (sut/allow [:ModifyDBInstance]
