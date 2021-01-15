@@ -31,13 +31,12 @@
 
 ;; TODO: how to incorporate permissions for ListTags and DescribeDBInstances
 ;; also how to create policy for example environment creation?
-;; TODO: handle possible need for RebootInstance if renaming with ApplyImmediatly?
 (deftest generate
   (is (= [(sut/allow [:CreateDBInstanceReadReplica]
                      (mapv fake-arn ["temp-staging" "temp-staging-replica"]))
           (sut/allow [:PromoteReadReplica]
                      [(fake-arn "temp-staging")])
-          (sut/allow [:ModifyDBInstance]
+          (sut/allow [:ModifyDBInstance :RebootInstance]
                      (mapv fake-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"]))
           (sut/allow [:DeleteDBInstance]
                      (mapv fake-arn ["old-staging-replica" "old-staging"]))]
