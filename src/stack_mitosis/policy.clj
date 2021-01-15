@@ -1,7 +1,8 @@
 (ns stack-mitosis.policy
   (:require [stack-mitosis.request :as r]
             [stack-mitosis.lookup :as lookup]
-            [stack-mitosis.predict :as predict]))
+            [stack-mitosis.predict :as predict]
+            [clojure.data.json :as json]))
 
 (defn make-wildcard-arn [db-id]
   (str "arn:aws:rds:*:*:db:" db-id))
@@ -30,9 +31,9 @@
 ;; TODO possibly generate optional statement identifier?
 ;; TODO simplify action/resource to singular if only one value?
 (defn allow [actions resources]
-  {:effect "Allow"
-   :action (mapv (partial str "rds") actions)
-   :resource resources})
+  {:Effect "Allow"
+   :Action (mapv (partial str "rds") actions)
+   :Resource resources})
 
 (defn create-example []
   (allow [:CreateDBInstance :AddTagsToResource]
@@ -55,3 +56,9 @@
             (allow [op :RebootInstance] (distinct (map :arn ops)))
             :else
             (allow [op] (distinct (map :arn ops)))))))
+
+(defn as-json [statements]
+  (json/pprint {:Version "2012-10-17" :Statements statements}))
+
+(comment
+  (println (as-json [(globals) (create-example)])))
