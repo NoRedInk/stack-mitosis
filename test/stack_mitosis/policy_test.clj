@@ -29,8 +29,6 @@
            (sut/permissions [] (op/describe)))
         "operation only if no database identifier in request")))
 
-;; TODO: how to incorporate permissions for ListTags and DescribeDBInstances
-;; also how to create policy for example environment creation?
 (deftest generate
   (is (= [(sut/allow [:CreateDBInstanceReadReplica]
                      (mapv fake-arn ["temp-staging" "temp-staging-replica"]))

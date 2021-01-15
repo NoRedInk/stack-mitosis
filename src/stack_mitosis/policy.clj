@@ -34,8 +34,13 @@
    :action (mapv (partial str "rds") actions)
    :resource resources})
 
+(defn create-example []
+  (allow [:CreateDBInstance :AddTagsToResource]
+         ["arn:aws:rds:*:*:db:mitosis-*"]))
+
 (defn globals []
-  (allow [:DescribeDBInstances :ListTagsForResource] ["arn:aws:rds:*"]))
+  (allow [:DescribeDBInstances :ListTagsForResource]
+         ["arn:aws:rds:*"]))
 
 ;; TODO breakup permissions per operation type with better granularity
 ;; ie Delete should only have permissions on old-, not temp- or current staging.
