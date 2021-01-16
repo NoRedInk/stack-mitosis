@@ -40,3 +40,19 @@
                      (mapv fake-arn ["old-staging-replica" "old-staging"]))]
          (sut/generate (example-instances)
                        (plan/replace-tree (example-instances) "production" "staging")))))
+
+(deftest from-plan
+  (is (= {:Version "2012-10-17"
+          :Statements
+          [(sut/allow [:DescribeDBInstances :ListTagsForResource]
+                      ["arn:aws:rds:*:*:db:*"])
+           (sut/allow [:CreateDBInstanceReadReplica]
+                      (mapv fake-arn ["temp-staging" "temp-staging-replica"]))
+           (sut/allow [:PromoteReadReplica]
+                      [(fake-arn "temp-staging")])
+           (sut/allow [:ModifyDBInstance :RebootInstance]
+                      (mapv fake-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"]))
+           (sut/allow [:DeleteDBInstance]
+                      (mapv fake-arn ["old-staging-replica" "old-staging"]))]}
+         (sut/from-plan (example-instances)
+                        (plan/replace-tree (example-instances) "production" "staging")))))

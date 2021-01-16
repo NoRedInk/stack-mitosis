@@ -1,8 +1,7 @@
 (ns stack-mitosis.policy
   (:require [stack-mitosis.request :as r]
             [stack-mitosis.lookup :as lookup]
-            [stack-mitosis.predict :as predict]
-            [clojure.data.json :as json]))
+            [stack-mitosis.predict :as predict]))
 
 (defn make-wildcard-arn [db-id]
   (str "arn:aws:rds:*:*:db:" db-id))
@@ -57,8 +56,12 @@
             :else
             (allow [op] (distinct (map :arn ops)))))))
 
-(defn as-json [statements]
-  (json/pprint {:Version "2012-10-17" :Statements statements}))
+(defn policy [statements]
+  {:Version "2012-10-17" :Statements statements})
+
+(defn from-plan [instances operations]
+  (policy (concat [(globals)] (generate instances operations))))
 
 (comment
-  (println (as-json [(globals) (create-example)])))
+  (require '(clojure.data.json :as json))
+  (json/pprint (policy [(globals) (create-example)])))

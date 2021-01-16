@@ -1,11 +1,13 @@
 (ns stack-mitosis.cli
-  (:require [clojure.tools.cli :as cli]
+  (:require [clojure.data.json :as json]
+            [clojure.string :as str]
+            [clojure.tools.cli :as cli]
+            [clojure.tools.logging :as log]
             [stack-mitosis.interpreter :as interpreter]
             [stack-mitosis.planner :as plan]
+            [stack-mitosis.policy :as policy]
             [stack-mitosis.request :as r]
-            [clojure.string :as str]
-            [stack-mitosis.sudo :as sudo]
-            [clojure.tools.logging :as log]))
+            [stack-mitosis.sudo :as sudo]))
 
 ;; TODO: add max-timeout for actions
 ;; TODO: show attempt info like skipped steps in flight plan?
@@ -16,7 +18,8 @@
    ["-t" "--target DST" "Root identifier of database tree to copy over"]
    [nil "--restart CMD" "Blocking script to restart application."]
    ["-c" "--credentials FILENAME" "Credentials file in edn for iam assume-role"]
-   ["-p" "--plan", "Display expected flightplan for operation."]
+   ["-p" "--plan" "Display expected flightplan for operation."]
+   ["-i" "--iam-policy" "Generate IAM policy for planned actions."]
    ["-h" "--help"]])
 
 (defn parse-args [args]
@@ -55,6 +58,9 @@
         (cond (:plan options)
               (do (println (flight-plan (interpreter/check-plan instances plan)))
                   true)
+              (:iam-policy options)
+              (do (json/pprint (policy/from-plan instances plan))
+                  true)
               :else
               (let [last-action (interpreter/evaluate-plan rds plan)]
                 (not (contains? last-action :ErrorResponse))))))))
@@ -72,4 +78,6 @@
                         "--plan" "--restart" "'./service-restart.sh'"]))
   (process (parse-args ["--source" "mitosis-prod" "--target" "mitosis-demo"
                         "--plan" "--credentials" "resources/role.edn"]))
+  (process (parse-args ["--source" "mitosis-prod" "--target" "mitosis-demo"
+                        "--iam-policy"]))
   (process (parse-args ["--source" "mitosis-prod" "--target" "mitosis-demo"])))
