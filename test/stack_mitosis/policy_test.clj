@@ -17,11 +17,15 @@
    {:DBInstanceIdentifier "staging-replica" :ReadReplicaSourceDBInstanceIdentifier "staging"
     :DBInstanceArn (fake-arn "staging-replica")}])
 
-(deftest make-wildcard-arn
+(deftest make-arn
   (is (= "arn:aws:rds:*:*:db:production"
-         (sut/make-wildcard-arn "production")))
+         (sut/make-arn "production")))
   (is (= "arn:aws:rds:*:*:og:*"
-         (sut/make-wildcard-arn "*" :type "og"))))
+         (sut/make-arn "*" :type "og")))
+  (is (= "arn:aws:rds:us-east-1:*:db:*"
+         (sut/make-arn "*" :region "us-east-1")))
+  (is (= "arn:aws:rds:*:1234:db:*"
+         (sut/make-arn "*" :account-id "1234"))))
 
 (deftest permissions
   (let [instance {:DBInstanceIdentifier "foo" :DBInstanceArn (fake-arn "foo")}]

@@ -4,8 +4,10 @@
             [stack-mitosis.predict :as predict]
             [clojure.string :as str]))
 
-(defn make-wildcard-arn [db-id & {:keys [type] :or {type "db"}}]
-  (str/join ":" ["arn:aws:rds:*:*" type db-id]))
+(defn make-arn
+  [db-id & {:keys [account-id region type]
+            :or {account-id "*" region "*" type "db"}}]
+  (str/join ":" ["arn:aws:rds" region account-id type db-id]))
 
 (defn permissions [instances action]
   (if-let [db-id (r/db-id action)]
@@ -23,7 +25,7 @@
         ;; This probably should never happen, can we ensure this and drop this
         ;; case OR should this be a nil arn case?
         {:op (:op action)
-         :arn (make-wildcard-arn db-id)}))
+         :arn (make-arn db-id)}))
     ;; TODO handle ResourceName for ListTagsForResource
     ;; TODO Exclude shell command, and include top level describe?
     {:op (:op action)}))
@@ -37,11 +39,11 @@
 
 (defn create-example []
   (allow [:CreateDBInstance :AddTagsToResource]
-         [(make-wildcard-arn "mitosis-*")]))
+         [(make-arn "mitosis-*")]))
 
 (defn globals []
   (allow [:DescribeDBInstances :ListTagsForResource]
-         [(make-wildcard-arn "*")]))
+         [(make-arn "*")]))
 
 ;; TODO breakup permissions per operation type with better granularity
 ;; ie Delete should only have permissions on old-, not temp- or current staging.
