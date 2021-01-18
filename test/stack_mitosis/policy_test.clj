@@ -17,6 +17,12 @@
    {:DBInstanceIdentifier "staging-replica" :ReadReplicaSourceDBInstanceIdentifier "staging"
     :DBInstanceArn (fake-arn "staging-replica")}])
 
+(deftest make-wildcard-arn
+  (is (= "arn:aws:rds:*:*:db:production"
+         (sut/make-wildcard-arn "production")))
+  (is (= "arn:aws:rds:*:*:og:*"
+         (sut/make-wildcard-arn "*" :type "og"))))
+
 (deftest permissions
   (let [instance {:DBInstanceIdentifier "foo" :DBInstanceArn (fake-arn "foo")}]
     (is (= {:op :DeleteDBInstance :arn (fake-arn "foo")}

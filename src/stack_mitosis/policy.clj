@@ -1,10 +1,11 @@
 (ns stack-mitosis.policy
   (:require [stack-mitosis.request :as r]
             [stack-mitosis.lookup :as lookup]
-            [stack-mitosis.predict :as predict]))
+            [stack-mitosis.predict :as predict]
+            [clojure.string :as str]))
 
-(defn make-wildcard-arn [db-id]
-  (str "arn:aws:rds:*:*:db:" db-id))
+(defn make-wildcard-arn [db-id & {:keys [type] :or {type "db"}}]
+  (str/join ":" ["arn:aws:rds:*:*" type db-id]))
 
 (defn permissions [instances action]
   (if-let [db-id (r/db-id action)]
