@@ -116,3 +116,9 @@ Note that for many cases, even if the clone process is interrupted, the flight p
 
     bin/kaocha # basic unit tests
     bin/kaocha --plugin cloverage # with coverage output
+
+# License
+
+Copyright © 2019-2021 Charles L.G. Comstock
+
+Distributed under the BSD-3 Clause License (see LICENSE file)
