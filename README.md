@@ -117,6 +117,14 @@ Note that for many cases, even if the clone process is interrupted, the flight p
     bin/kaocha # basic unit tests
     bin/kaocha --plugin cloverage # with coverage output
 
+# Frequently Asked Questions
+
+## Why not use Cloudformation/Terraform
+
+Cloudformation and Terraform are wonderful tools focused on declarative architecture transformation from one steady state to another. Stack-mitosis is focused on safely cloning the contents of a database in one environment to another without changing from one steady state to another. As example, for an environment with production and demo environments, they both exist in the correct configuration before running stack-mitosis, and then after running stack-mitosis the configuration remains the same but the demo environment has a fresh copy of the data from production.
+
+I suspect this could also be accomplished using one of these declarative infrastructure tools by transitioning through multiple intervening states, but have not found any examples of anyone doing that. 
+
 # License
 
 Copyright © 2019-2021 Charles L.G. Comstock
