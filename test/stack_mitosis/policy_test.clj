@@ -41,11 +41,16 @@
 
 (deftest generate
   (is (= [(sut/allow [:CreateDBInstanceReadReplica]
-                     (mapv fake-arn ["temp-staging" "temp-staging-replica"]))
+                     (into ["arn:aws:rds:*:*:og:*"
+                            "arn:aws:rds:*:*:pg:*"
+                            "arn:aws:rds:*:*:subgrp:*"]
+                           (mapv fake-arn ["temp-staging" "temp-staging-replica"])))
           (sut/allow [:PromoteReadReplica]
                      [(fake-arn "temp-staging")])
           (sut/allow [:ModifyDBInstance :RebootDBInstance]
-                     (mapv fake-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"]))
+                     (into ["arn:aws:rds:*:*:og:*"
+                            "arn:aws:rds:*:*:subgrp:*"]
+                           (mapv fake-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"])))
           (sut/allow [:DeleteDBInstance]
                      (mapv fake-arn ["old-staging-replica" "old-staging"]))]
          (sut/generate (example-instances)
@@ -57,11 +62,16 @@
           [(sut/allow [:DescribeDBInstances :ListTagsForResource]
                       ["arn:aws:rds:*:*:db:*"])
            (sut/allow [:CreateDBInstanceReadReplica]
-                      (mapv fake-arn ["temp-staging" "temp-staging-replica"]))
+                      (into ["arn:aws:rds:*:*:og:*"
+                             "arn:aws:rds:*:*:pg:*"
+                             "arn:aws:rds:*:*:subgrp:*"]
+                            (mapv fake-arn ["temp-staging" "temp-staging-replica"])))
            (sut/allow [:PromoteReadReplica]
                       [(fake-arn "temp-staging")])
            (sut/allow [:ModifyDBInstance :RebootDBInstance]
-                      (mapv fake-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"]))
+                      (into ["arn:aws:rds:*:*:og:*"
+                             "arn:aws:rds:*:*:subgrp:*"]
+                            (mapv fake-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"])))
            (sut/allow [:DeleteDBInstance]
                       (mapv fake-arn ["old-staging-replica" "old-staging"]))]}
          (sut/from-plan (example-instances)

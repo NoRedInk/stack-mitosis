@@ -127,7 +127,9 @@ $ clj -m stack-mitosis.cli --source mitosis-prod --target mitosis-demo --iam-pol
   {"Effect":"Allow",
    "Action":["rds:CreateDBInstanceReadReplica"],
    "Resource":
-   ["arn:aws:rds:*:*:db:temp-mitosis-demo",
+   ["arn:aws:rds:*:*:og:*", "arn:aws:rds:*:*:pg:*",
+    "arn:aws:rds:*:*:subgrp:*",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo",
     "arn:aws:rds:*:*:db:temp-mitosis-demo-replica"]},
   {"Effect":"Allow",
    "Action":["rds:PromoteReadReplica"],
@@ -136,7 +138,8 @@ $ clj -m stack-mitosis.cli --source mitosis-prod --target mitosis-demo --iam-pol
   {"Effect":"Allow",
    "Action":["rds:ModifyDBInstance", "rds:RebootDBInstance"],
    "Resource":
-   ["arn:aws:rds:*:*:db:temp-mitosis-demo",
+   ["arn:aws:rds:*:*:og:*", "arn:aws:rds:*:*:subgrp:*",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo",
     "arn:aws:rds:*:*:db:temp-mitosis-demo-replica",
     "arn:aws:rds:*:*:db:mitosis-demo-replica",
     "arn:aws:rds:*:*:db:mitosis-demo"]},

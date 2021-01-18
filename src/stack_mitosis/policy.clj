@@ -47,6 +47,8 @@
 
 ;; TODO breakup permissions per operation type with better granularity
 ;; ie Delete should only have permissions on old-, not temp- or current staging.
+;; TODO tighten restrictions on DB OptionGroup (og), DB ParameterGroup (pg) and DB Subnet Group (subgrp)
+;; these were listed as warnings in the policy editor so leaving wildcard for now
 (defn generate [instances operations]
   (let [all-permissions
         (map permissions
@@ -54,9 +56,18 @@
              operations)]
     (for [[op ops] (group-by :op all-permissions)
           :let [arns (distinct (map :arn ops))]]
-      ;; Give RebootInstance if apply ModifyDBInstance so that ApplyImmediately can reboot
-      (cond (= op :ModifyDBInstance)
-            (allow [op :RebootDBInstance] arns)
+      (cond (= op :CreateDBInstanceReadReplica)
+            (allow [op]
+                   (into [(make-arn "*" :type "og")
+                          (make-arn "*" :type "pg")
+                          (make-arn "*" :type "subgrp")]
+                         arns))
+            (= op :ModifyDBInstance)
+            ;; Give RebootInstance if apply ModifyDBInstance so that ApplyImmediately can reboot
+            (allow [op :RebootDBInstance]
+                   (into [(make-arn "*" :type "og")
+                          (make-arn "*" :type "subgrp")]
+                         arns))
             :else
             (allow [op] arns)))))
 
