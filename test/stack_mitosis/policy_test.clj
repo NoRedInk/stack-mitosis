@@ -43,7 +43,7 @@
 
 (deftest from-plan
   (is (= {:Version "2012-10-17"
-          :Statements
+          :Statement
           [(sut/allow [:DescribeDBInstances :ListTagsForResource]
                       ["arn:aws:rds:*:*:db:*"])
            (sut/allow [:CreateDBInstanceReadReplica]

@@ -57,7 +57,7 @@
             (allow [op] (distinct (map :arn ops)))))))
 
 (defn policy [statements]
-  {:Version "2012-10-17" :Statements statements})
+  {:Version "2012-10-17" :Statement statements})
 
 (defn from-plan [instances operations]
   (policy (concat [(globals)] (generate instances operations))))
