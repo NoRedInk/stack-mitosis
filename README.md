@@ -134,7 +134,7 @@ $ clj -m stack-mitosis.cli --source mitosis-prod --target mitosis-demo --iam-pol
    "Resource":
    ["arn:aws:rds:*:*:db:temp-mitosis-demo"]},
   {"Effect":"Allow",
-   "Action":["rds:ModifyDBInstance", "rds:RebootInstance"],
+   "Action":["rds:ModifyDBInstance", "rds:RebootDBInstance"],
    "Resource":
    ["arn:aws:rds:*:*:db:temp-mitosis-demo",
     "arn:aws:rds:*:*:db:temp-mitosis-demo-replica",

@@ -52,7 +52,7 @@
     (for [[op ops] (group-by :op all-permissions)]
       ;; Give RebootInstance if apply ModifyDBInstance so that ApplyImmediately can reboot
       (cond (= op :ModifyDBInstance)
-            (allow [op :RebootInstance] (distinct (map :arn ops)))
+            (allow [op :RebootDBInstance] (distinct (map :arn ops)))
             :else
             (allow [op] (distinct (map :arn ops)))))))
 

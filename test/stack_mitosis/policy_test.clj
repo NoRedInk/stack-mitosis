@@ -34,7 +34,7 @@
                      (mapv fake-arn ["temp-staging" "temp-staging-replica"]))
           (sut/allow [:PromoteReadReplica]
                      [(fake-arn "temp-staging")])
-          (sut/allow [:ModifyDBInstance :RebootInstance]
+          (sut/allow [:ModifyDBInstance :RebootDBInstance]
                      (mapv fake-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"]))
           (sut/allow [:DeleteDBInstance]
                      (mapv fake-arn ["old-staging-replica" "old-staging"]))]
@@ -50,7 +50,7 @@
                       (mapv fake-arn ["temp-staging" "temp-staging-replica"]))
            (sut/allow [:PromoteReadReplica]
                       [(fake-arn "temp-staging")])
-           (sut/allow [:ModifyDBInstance :RebootInstance]
+           (sut/allow [:ModifyDBInstance :RebootDBInstance]
                       (mapv fake-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"]))
            (sut/allow [:DeleteDBInstance]
                       (mapv fake-arn ["old-staging-replica" "old-staging"]))]}
