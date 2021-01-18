@@ -52,12 +52,13 @@
         (map permissions
              (reductions predict/predict instances operations)
              operations)]
-    (for [[op ops] (group-by :op all-permissions)]
+    (for [[op ops] (group-by :op all-permissions)
+          :let [arns (distinct (map :arn ops))]]
       ;; Give RebootInstance if apply ModifyDBInstance so that ApplyImmediately can reboot
       (cond (= op :ModifyDBInstance)
-            (allow [op :RebootDBInstance] (distinct (map :arn ops)))
+            (allow [op :RebootDBInstance] arns)
             :else
-            (allow [op] (distinct (map :arn ops)))))))
+            (allow [op] arns)))))
 
 (defn policy [statements]
   {:Version "2012-10-17" :Statement statements})
