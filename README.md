@@ -78,6 +78,7 @@ Hopefully in the future this can be parsed directly from the `AWS_CONFIG` file.
         --restart "./restart-service.sh"
         --credentials resources/role.edn
         [--plan]
+        [--iam-policy]
 
 ## Flight Plan
 
@@ -111,6 +112,42 @@ Flight plan:
 ```
 
 Note that for many cases, even if the clone process is interrupted, the flight plan will show steps it will try to execute again, and steps it will skip because it has detected that the instance has already been created or modified to the right attribute values. In other words, it tries to pickup where it left-off if there is a failure.
+
+## IAM Policy Generation
+
+Stack-mitosis can also generate an IAM policy for an automated user to update a particular environment. The policy uses the database names from the planned changeset to calculate these minimal permissions. While they have been elided from the example below, the ARNs are locked to the account & region.
+
+```
+$ clj -m stack-mitosis.cli --source mitosis-prod --target mitosis-demo --iam-policy
+{"Version":"2012-10-17",
+ "Statement":
+ [{"Effect":"Allow",
+   "Action":["rds:DescribeDBInstances", "rds:ListTagsForResource"],
+   "Resource":["arn:aws:rds:::db:*"]},
+  {"Effect":"Allow",
+   "Action":["rds:CreateDBInstanceReadReplica"],
+   "Resource":
+   ["arn:aws:rds:::db:temp-mitosis-demo",
+    "arn:aws:rds:::db:temp-mitosis-demo-replica"]},
+  {"Effect":"Allow",
+   "Action":["rds:PromoteReadReplica"],
+   "Resource":
+   ["arn:aws:rds:::db:temp-mitosis-demo"]},
+  {"Effect":"Allow",
+   "Action":["rds:ModifyDBInstance", "rds:RebootInstance"],
+   "Resource":
+   ["arn:aws:rds:::db:temp-mitosis-demo",
+    "arn:aws:rds:::db:temp-mitosis-demo-replica",
+    "arn:aws:rds:::db:mitosis-demo-replica",
+    "arn:aws:rds:::db:mitosis-demo"]},
+  {"Effect":"Allow",
+   "Action":["rds:DeleteDBInstance"],
+   "Resource":
+   ["arn:aws:rds:::db:old-mitosis-demo-replica",
+    "arn:aws:rds:::db:old-mitosis-demo"]}]}
+```
+
+This ensures that a continuous integration or cronjob server like Jenkins can clone production to demo environments on a weekly basis restricted to the minimal permissions necessary. If a user needs to run stack-mitosis for multiple environments (demo, staging, random developer test environment), then a policy can be attached for each environment.
 
 # Testing
 
