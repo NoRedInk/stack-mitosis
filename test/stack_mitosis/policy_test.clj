@@ -45,7 +45,7 @@
   (is (= {:Version "2012-10-17"
           :Statement
           [(sut/allow [:DescribeDBInstances :ListTagsForResource]
-                      ["arn:aws:rds:::db:*"])
+                      ["arn:aws:rds:*:*:db:*"])
            (sut/allow [:CreateDBInstanceReadReplica]
                       (mapv fake-arn ["temp-staging" "temp-staging-replica"]))
            (sut/allow [:PromoteReadReplica]

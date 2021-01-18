@@ -123,28 +123,28 @@ $ clj -m stack-mitosis.cli --source mitosis-prod --target mitosis-demo --iam-pol
  "Statement":
  [{"Effect":"Allow",
    "Action":["rds:DescribeDBInstances", "rds:ListTagsForResource"],
-   "Resource":["arn:aws:rds:::db:*"]},
+   "Resource":["arn:aws:rds:*:*:db:*"]},
   {"Effect":"Allow",
    "Action":["rds:CreateDBInstanceReadReplica"],
    "Resource":
-   ["arn:aws:rds:::db:temp-mitosis-demo",
-    "arn:aws:rds:::db:temp-mitosis-demo-replica"]},
+   ["arn:aws:rds:*:*:db:temp-mitosis-demo",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo-replica"]},
   {"Effect":"Allow",
    "Action":["rds:PromoteReadReplica"],
    "Resource":
-   ["arn:aws:rds:::db:temp-mitosis-demo"]},
+   ["arn:aws:rds:*:*:db:temp-mitosis-demo"]},
   {"Effect":"Allow",
    "Action":["rds:ModifyDBInstance", "rds:RebootInstance"],
    "Resource":
-   ["arn:aws:rds:::db:temp-mitosis-demo",
-    "arn:aws:rds:::db:temp-mitosis-demo-replica",
-    "arn:aws:rds:::db:mitosis-demo-replica",
-    "arn:aws:rds:::db:mitosis-demo"]},
+   ["arn:aws:rds:*:*:db:temp-mitosis-demo",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:mitosis-demo"]},
   {"Effect":"Allow",
    "Action":["rds:DeleteDBInstance"],
    "Resource":
-   ["arn:aws:rds:::db:old-mitosis-demo-replica",
-    "arn:aws:rds:::db:old-mitosis-demo"]}]}
+   ["arn:aws:rds:*:*:db:old-mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:old-mitosis-demo"]}]}
 ```
 
 This ensures that a continuous integration or cronjob server like Jenkins can clone production to demo environments on a weekly basis restricted to the minimal permissions necessary. If a user needs to run stack-mitosis for multiple environments (demo, staging, random developer test environment), then a policy can be attached for each environment.
