@@ -26,8 +26,14 @@
         db-id (r/db-id action)
         source-arn (:DBInstanceArn (lookup/by-id instances source-id))
         target-arn (:DBInstanceArn (lookup/by-id (predict/predict instances action) db-id))]
-    [{:op (:op action) :arn source-arn}
-     {:op (:op action) :arn target-arn}
+    [{:op (:op action)
+      ;; TODO: can these permissions be more specific instead of wildcard?
+      ;; a) re-use the base ARN (ie region:account-id) from source
+      ;; b) generate named ARNs for each subtype used in source?
+      :arn (into [(make-arn "*" :type "og")
+                  (make-arn "*" :type "pg")
+                  (make-arn "*" :type "subgrp")]
+                 [source-arn target-arn])}
      {:op :AddTagsToResource :arn target-arn}]))
 
 (defmethod permissions :default
@@ -66,24 +72,18 @@
               (reductions predict/predict instances operations)
               operations))]
     (for [[op ops] (group-by :op all-permissions)
-          :let [arns (distinct (map :arn ops))]]
-      (cond (= op :CreateDBInstanceReadReplica)
-            ;; TODO account for AddTagsToResource on created instances
-            (allow [op]
-                   (into [(make-arn "*" :type "og")
-                          (make-arn "*" :type "pg")
-                          (make-arn "*" :type "subgrp")]
-                         arns))
-            (= op :ModifyDBInstance)
-            ;; Give RebootInstance if apply ModifyDBInstance so that ApplyImmediately can reboot
-            (allow [op :RebootDBInstance]
-                   (into [(make-arn "*" :type "og")
-                          (make-arn "*" :type "pg")
-                          (make-arn "*" :type "subgrp")
-                          (make-arn "*" :type "secgrp")]
-                         arns))
-            :else
-            (allow [op] arns)))))
+          :let [arns (distinct (flatten (map :arn ops)))]]
+      (cond  (= op :ModifyDBInstance)
+             ;; TODO: move this to permissions defmulti
+             ;; Give RebootInstance if apply ModifyDBInstance so that ApplyImmediately can reboot
+             (allow [op :RebootDBInstance]
+                    (into [(make-arn "*" :type "og")
+                           (make-arn "*" :type "pg")
+                           (make-arn "*" :type "subgrp")
+                           (make-arn "*" :type "secgrp")]
+                          arns))
+             :else
+             (allow [op] arns)))))
 
 (defn policy [statements]
   {:Version "2012-10-17" :Statement statements})
