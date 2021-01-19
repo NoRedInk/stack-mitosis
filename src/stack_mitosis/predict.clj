@@ -27,7 +27,7 @@
 (defmulti predict
   "Predict contents of instances db after applying operation to instances.
 
-      (predict [instances op] _) => instances'
+      (predict [instances op]) => instances'
   "
   (fn [_ op] (get op :op)))
 

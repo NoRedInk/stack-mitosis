@@ -10,7 +10,9 @@
   (str/join ":" ["arn:aws:rds" region account-id type db-id]))
 
 (defmulti permissions
-  "Calculate permissions required for a given operation."
+  "Calculate permissions required for a given operation.
+
+      (permissions [instances op]) => [(allow ops arns) ...]"
   (fn [_ action] (get action :op)))
 
 (defmethod permissions :shell-command
