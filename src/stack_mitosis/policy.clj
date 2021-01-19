@@ -9,26 +9,32 @@
             :or {account-id "*" region "*" type "db"}}]
   (str/join ":" ["arn:aws:rds" region account-id type db-id]))
 
-(defn permissions [instances action]
-  (if-let [db-id (r/db-id action)]
+(defmulti permissions
+  "Calculate permissions required for a given operation."
+  (fn [_ action] (get action :op)))
+
+(defmethod permissions :shell-command
+  [_ _]
+  [])
+
+(defmethod permissions :CreateDBInstanceReadReplica
+  [instances action]
+  ;; For create replica, use the ARN from the source database
+  ;; TODO: include target ARN
+  ;; TODO: include AddTagsToResource permissions
+  (let [source-id (r/source-id action)
+        source (lookup/by-id instances source-id)]
+    [{:op (:op action)
+      :arn (:DBInstanceArn source)}]))
+
+(defmethod permissions :default
+  [instances action]
+  (let [db-id (r/db-id action)]
     (if-let [instance (lookup/by-id instances db-id)]
-      {:op (:op action)
-       :arn (:DBInstanceArn instance)}
-      ;; FIXME: this is really gross
-      ;; For create replica, use the ARN from the source database
-      (let [source-id (r/source-id action)
-            source (lookup/by-id instances source-id)]
-        (if (and source-id source)
-          {:op (:op action)
-           :arn (:DBInstanceArn source)}
-          ;; fallback to wildcard if we don't recognize
-          ;; This probably should never happen, can we ensure this and drop this
-          ;; case OR should this be a nil arn case?
-          {:op (:op action)
-           :arn (make-arn db-id)})))
-    ;; TODO handle ResourceName for ListTagsForResource
-    ;; TODO Exclude shell command, and include top level describe?
-    {:op (:op action)}))
+      [{:op (:op action)
+        :arn (:DBInstanceArn instance)}]
+      ;; TODO handle ResourceName for ListTagsForResource
+      [{:op (:op action)}])))
 
 ;; TODO possibly generate optional statement identifier?
 ;; TODO simplify action/resource to singular if only one value?
@@ -51,9 +57,10 @@
 ;; these were listed as warnings in the policy editor so leaving wildcard for now
 (defn generate [instances operations]
   (let [all-permissions
-        (map permissions
-             (reductions predict/predict instances operations)
-             operations)]
+        (flatten
+         (map permissions
+              (reductions predict/predict instances operations)
+              operations))]
     (for [[op ops] (group-by :op all-permissions)
           :let [arns (distinct (map :arn ops))]]
       (cond (= op :CreateDBInstanceReadReplica)

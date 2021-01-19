@@ -29,13 +29,13 @@
 
 (deftest permissions
   (let [instance {:DBInstanceIdentifier "foo" :DBInstanceArn (fake-arn "foo")}]
-    (is (= {:op :DeleteDBInstance :arn (fake-arn "foo")}
+    (is (= [{:op :DeleteDBInstance :arn (fake-arn "foo")}]
            (sut/permissions [instance] (op/delete "foo")))
         "only operation if instance is not found")
-    (is (= {:op :DeleteDBInstance :arn (fake-arn "foo")}
+    (is (= [{:op :DeleteDBInstance :arn (fake-arn "foo")}]
            (sut/permissions [instance] (op/delete "foo")))
         "operation and arn if instance is found")
-    (is (= {:op :DescribeDBInstances}
+    (is (= [{:op :DescribeDBInstances}]
            (sut/permissions [] (op/describe)))
         "operation only if no database identifier in request")))
 
