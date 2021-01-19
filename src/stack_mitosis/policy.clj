@@ -57,6 +57,7 @@
     (for [[op ops] (group-by :op all-permissions)
           :let [arns (distinct (map :arn ops))]]
       (cond (= op :CreateDBInstanceReadReplica)
+            ;; TODO account for AddTagsToResource on created instances
             (allow [op]
                    (into [(make-arn "*" :type "og")
                           (make-arn "*" :type "pg")
