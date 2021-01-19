@@ -76,7 +76,7 @@ Hopefully in the future this can be parsed directly from the `AWS_CONFIG` file.
     clj -m stack-mitosis.cli \
         --source mitosis-production --target mitosis-staging \
         --restart "./restart-service.sh"
-        --credentials resources/role.edn
+        [--credentials resources/role.edn]
         [--plan]
         [--iam-policy]
 
