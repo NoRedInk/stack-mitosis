@@ -47,7 +47,8 @@
    :Resource resources})
 
 (defn create-example []
-  (allow [:CreateDBInstance :AddTagsToResource]
+  ;; TODO handle og, pg, subgrp, secgrp permissions?
+  (allow [:CreateDBInstance :AddTagsToResource :DeleteDBInstance]
          [(make-arn "mitosis-*")]))
 
 (defn globals []
