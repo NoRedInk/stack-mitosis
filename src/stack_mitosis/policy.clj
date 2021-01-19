@@ -77,7 +77,9 @@
             ;; Give RebootInstance if apply ModifyDBInstance so that ApplyImmediately can reboot
             (allow [op :RebootDBInstance]
                    (into [(make-arn "*" :type "og")
-                          (make-arn "*" :type "subgrp")]
+                          (make-arn "*" :type "pg")
+                          (make-arn "*" :type "subgrp")
+                          (make-arn "*" :type "secgrp")]
                          arns))
             :else
             (allow [op] arns)))))

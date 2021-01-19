@@ -51,7 +51,9 @@
                      [(fake-arn "temp-staging")])
           (sut/allow [:ModifyDBInstance :RebootDBInstance]
                      (into ["arn:aws:rds:*:*:og:*"
-                            "arn:aws:rds:*:*:subgrp:*"]
+                            "arn:aws:rds:*:*:pg:*"
+                            "arn:aws:rds:*:*:subgrp:*"
+                            "arn:aws:rds:*:*:secgrp:*"]
                            (mapv fake-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"])))
           (sut/allow [:DeleteDBInstance]
                      (mapv fake-arn ["old-staging-replica" "old-staging"]))]
@@ -74,7 +76,9 @@
                       [(fake-arn "temp-staging")])
            (sut/allow [:ModifyDBInstance :RebootDBInstance]
                       (into ["arn:aws:rds:*:*:og:*"
-                             "arn:aws:rds:*:*:subgrp:*"]
+                             "arn:aws:rds:*:*:pg:*"
+                             "arn:aws:rds:*:*:subgrp:*"
+                             "arn:aws:rds:*:*:secgrp:*"]
                             (mapv fake-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"])))
            (sut/allow [:DeleteDBInstance]
                       (mapv fake-arn ["old-staging-replica" "old-staging"]))]}
