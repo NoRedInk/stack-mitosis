@@ -44,7 +44,7 @@
                      (into ["arn:aws:rds:*:*:og:*"
                             "arn:aws:rds:*:*:pg:*"
                             "arn:aws:rds:*:*:subgrp:*"]
-                           (mapv fake-arn ["temp-staging" "temp-staging-replica"])))
+                           (mapv fake-arn ["production" "temp-staging"])))
           (sut/allow [:PromoteReadReplica]
                      [(fake-arn "temp-staging")])
           (sut/allow [:ModifyDBInstance :RebootDBInstance]
@@ -65,7 +65,7 @@
                       (into ["arn:aws:rds:*:*:og:*"
                              "arn:aws:rds:*:*:pg:*"
                              "arn:aws:rds:*:*:subgrp:*"]
-                            (mapv fake-arn ["temp-staging" "temp-staging-replica"])))
+                            (mapv fake-arn ["production" "temp-staging"])))
            (sut/allow [:PromoteReadReplica]
                       [(fake-arn "temp-staging")])
            (sut/allow [:ModifyDBInstance :RebootDBInstance]
