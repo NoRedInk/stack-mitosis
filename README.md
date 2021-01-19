@@ -115,7 +115,7 @@ Note that for many cases, even if the clone process is interrupted, the flight p
 
 ## IAM Policy Generation
 
-Stack-mitosis can also generate an IAM policy for an automated user to update a particular environment. The policy uses the database names from the planned changeset to calculate these minimal permissions. While they have been elided from the example below, the ARNs are locked to the account & region.
+Stack-mitosis can also generate an IAM policy for an automated user to update a particular environment. The policy uses the database names from the planned changeset to calculate these minimal permissions. While they have been elided from the example below, the ARNs are locked to the specific account & region used.
 
 ```
 $ clj -m stack-mitosis.cli --source mitosis-prod --target mitosis-demo --iam-policy
@@ -129,17 +129,33 @@ $ clj -m stack-mitosis.cli --source mitosis-prod --target mitosis-demo --iam-pol
    "Resource":
    ["arn:aws:rds:*:*:og:*", "arn:aws:rds:*:*:pg:*",
     "arn:aws:rds:*:*:subgrp:*",
+    "arn:aws:rds:*:*:db:mitosis-prod",
     "arn:aws:rds:*:*:db:temp-mitosis-demo",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo-replica"]},
+  {"Effect":"Allow",
+   "Action":["rds:AddTagsToResource"],
+   "Resource":
+   ["arn:aws:rds:*:*:db:temp-mitosis-demo",
     "arn:aws:rds:*:*:db:temp-mitosis-demo-replica"]},
   {"Effect":"Allow",
    "Action":["rds:PromoteReadReplica"],
    "Resource":
    ["arn:aws:rds:*:*:db:temp-mitosis-demo"]},
   {"Effect":"Allow",
-   "Action":["rds:ModifyDBInstance", "rds:RebootDBInstance"],
+   "Action":["rds:ModifyDBInstance"],
    "Resource":
-   ["arn:aws:rds:*:*:og:*", "arn:aws:rds:*:*:subgrp:*",
+   ["arn:aws:rds:*:*:og:*", "arn:aws:rds:*:*:pg:*",
+    "arn:aws:rds:*:*:secgrp:*", "arn:aws:rds:*:*:subgrp:*",
     "arn:aws:rds:*:*:db:temp-mitosis-demo",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:old-mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:mitosis-demo",
+    "arn:aws:rds:*:*:db:old-mitosis-demo"]},
+  {"Effect":"Allow",
+   "Action":["rds:RebootDBInstance"],
+   "Resource":
+   ["arn:aws:rds:*:*:db:temp-mitosis-demo",
     "arn:aws:rds:*:*:db:temp-mitosis-demo-replica",
     "arn:aws:rds:*:*:db:mitosis-demo-replica",
     "arn:aws:rds:*:*:db:mitosis-demo"]},
