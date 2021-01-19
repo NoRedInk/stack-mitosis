@@ -55,5 +55,7 @@
             (plan/delete-tree state "mitosis-prod"))))
 
 (comment
+  ;; Add fake arn to create template?
   (policy/generate [] (create template))
-  (policy/generate [] (destroy)))
+  ;; Fix this to actual return a functioning delete policy?
+  (policy/generate (predict/state [] (create template)) (destroy)))
