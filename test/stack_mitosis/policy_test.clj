@@ -68,31 +68,6 @@
              :arn "arn:aws:rds:us-east-1:1234567:db:foo"}]
            (sut/permissions [instance] (op/modify "foo" {}))))))
 
-(deftest generate
-  (is (= [(sut/allow [:CreateDBInstanceReadReplica]
-                     (into ["arn:aws:rds:*:*:og:*"
-                            "arn:aws:rds:*:*:pg:*"
-                            "arn:aws:rds:*:*:subgrp:*"]
-                           (mapv fake-arn ["production" "temp-staging" "temp-staging-replica"])))
-          (sut/allow [:AddTagsToResource]
-                     (mapv fake-arn ["temp-staging" "temp-staging-replica"]))
-          (sut/allow [:PromoteReadReplica]
-                     [(fake-arn "temp-staging")])
-          (sut/allow [:ModifyDBInstance]
-                     (into ["arn:aws:rds:*:*:og:*"
-                            "arn:aws:rds:*:*:pg:*"
-                            "arn:aws:rds:*:*:secgrp:*"
-                            "arn:aws:rds:*:*:subgrp:*"]
-                           (mapv fake-arn ["temp-staging" "temp-staging-replica"
-                                           "staging-replica" "old-staging-replica"
-                                           "staging" "old-staging"])))
-          (sut/allow [:RebootDBInstance]
-                     (mapv fake-arn ["temp-staging" "temp-staging-replica" "staging-replica" "staging"]))
-          (sut/allow [:DeleteDBInstance]
-                     (mapv fake-arn ["old-staging-replica" "old-staging"]))]
-         (sut/generate (example-instances)
-                       (plan/replace-tree (example-instances) "production" "staging")))))
-
 (deftest from-plan
   (is (= {:Version "2012-10-17"
           :Statement
