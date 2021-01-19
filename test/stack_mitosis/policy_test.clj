@@ -37,7 +37,36 @@
         "operation and arn if instance is found")
     (is (= [{:op :DescribeDBInstances}]
            (sut/permissions [] (op/describe)))
-        "operation only if no database identifier in request")))
+        "operation only if no database identifier in request")
+    (is (= [{:op :CreateDBInstanceReadReplica
+             :arn ["arn:aws:rds:*:*:og:*"
+                   "arn:aws:rds:*:*:pg:*"
+                   "arn:aws:rds:*:*:subgrp:*"
+                   "arn:aws:rds:us-east-1:1234567:db:foo"
+                   "arn:aws:rds:us-east-1:1234567:db:bar"]}
+            {:op :AddTagsToResource
+             :arn "arn:aws:rds:us-east-1:1234567:db:bar"}]
+           (sut/permissions [instance] (op/create-replica "foo" "bar"))))
+    (is (= [{:op :ModifyDBInstance
+             :arn ["arn:aws:rds:*:*:og:*"
+                   "arn:aws:rds:*:*:pg:*"
+                   "arn:aws:rds:*:*:secgrp:*"
+                   "arn:aws:rds:*:*:subgrp:*"
+                   "arn:aws:rds:us-east-1:1234567:db:foo"]}
+            {:op :ModifyDBInstance
+             :arn "arn:aws:rds:us-east-1:1234567:db:bar"}
+            {:op :RebootDBInstance
+             :arn "arn:aws:rds:us-east-1:1234567:db:foo"}]
+           (sut/permissions [instance] (op/rename "foo" "bar"))))
+    (is (= [{:op :ModifyDBInstance
+             :arn ["arn:aws:rds:*:*:og:*"
+                   "arn:aws:rds:*:*:pg:*"
+                   "arn:aws:rds:*:*:secgrp:*"
+                   "arn:aws:rds:*:*:subgrp:*"
+                   "arn:aws:rds:us-east-1:1234567:db:foo"]}
+            {:op :RebootDBInstance
+             :arn "arn:aws:rds:us-east-1:1234567:db:foo"}]
+           (sut/permissions [instance] (op/modify "foo" {}))))))
 
 (deftest generate
   (is (= [(sut/allow [:CreateDBInstanceReadReplica]
