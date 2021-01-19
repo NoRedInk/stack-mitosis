@@ -12,7 +12,7 @@
 (defmulti permissions
   "Calculate permissions required for a given operation.
 
-      (permissions [instances op]) => [(allow ops arns) ...]"
+      (permissions [instances action]) => [{:op _ :arn _} ...]"
   (fn [_ action] (get action :op)))
 
 (defmethod permissions :shell-command
@@ -22,12 +22,13 @@
 (defmethod permissions :CreateDBInstanceReadReplica
   [instances action]
   ;; For create replica, use the ARN from the source database
-  ;; TODO: include target ARN
-  ;; TODO: include AddTagsToResource permissions
   (let [source-id (r/source-id action)
-        source (lookup/by-id instances source-id)]
-    [{:op (:op action)
-      :arn (:DBInstanceArn source)}]))
+        db-id (r/db-id action)
+        source-arn (:DBInstanceArn (lookup/by-id instances source-id))
+        target-arn (:DBInstanceArn (lookup/by-id (predict/predict instances action) db-id))]
+    [{:op (:op action) :arn source-arn}
+     {:op (:op action) :arn target-arn}
+     {:op :AddTagsToResource :arn target-arn}]))
 
 (defmethod permissions :default
   [instances action]
