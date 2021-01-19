@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-clojure -A:kaocha -m kaocha.runner --config-file test/tests.edn "$@"
+clojure -Mkaocha -m kaocha.runner --config-file test/tests.edn "$@"
