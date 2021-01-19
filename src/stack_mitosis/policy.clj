@@ -36,6 +36,28 @@
                  [source-arn target-arn])}
      {:op :AddTagsToResource :arn target-arn}]))
 
+(defmethod permissions :ModifyDBInstance
+  [instances action]
+  (let [db-id (r/db-id action)
+        arn (:DBInstanceArn (lookup/by-id instances db-id))]
+    (keep identity
+          [{:op (:op action)
+            ;; TODO: see above about tightening permissions
+            :arn [(make-arn "*" :type "og")
+                  (make-arn "*" :type "pg")
+                  (make-arn "*" :type "secgrp")
+                  (make-arn "*" :type "subgrp")
+                  arn]}
+           ;; If renaming we need the new arn too
+           (when-let [new-arn
+                      (:DBInstanceArn (lookup/by-id (predict/predict instances action)
+                                                    (r/new-id action)))]
+             {:op (:op action)
+              :arn new-arn})
+           ;; RebootDBInstance is necessary for :ApplyImmediately true
+           {:op :RebootDBInstance
+            :arn arn}])))
+
 (defmethod permissions :default
   [instances action]
   (let [db-id (r/db-id action)]
@@ -67,23 +89,11 @@
 ;; these were listed as warnings in the policy editor so leaving wildcard for now
 (defn generate [instances operations]
   (let [all-permissions
-        (flatten
-         (map permissions
-              (reductions predict/predict instances operations)
-              operations))]
-    (for [[op ops] (group-by :op all-permissions)
-          :let [arns (distinct (flatten (map :arn ops)))]]
-      (cond  (= op :ModifyDBInstance)
-             ;; TODO: move this to permissions defmulti
-             ;; Give RebootInstance if apply ModifyDBInstance so that ApplyImmediately can reboot
-             (allow [op :RebootDBInstance]
-                    (into [(make-arn "*" :type "og")
-                           (make-arn "*" :type "pg")
-                           (make-arn "*" :type "subgrp")
-                           (make-arn "*" :type "secgrp")]
-                          arns))
-             :else
-             (allow [op] arns)))))
+        (mapcat permissions
+                (reductions predict/predict instances operations)
+                operations)]
+    (for [[op ops] (group-by :op all-permissions)]
+      (allow [op] (distinct (flatten (map :arn ops)))))))
 
 (defn policy [statements]
   {:Version "2012-10-17" :Statement statements})
