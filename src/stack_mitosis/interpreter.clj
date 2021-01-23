@@ -182,7 +182,6 @@
 
   (list-tags rds instances "mitosis-demo")
 
-  (lookup/by-id (databases rds) "mitosis-prod")
   (let [instances (databases rds)]
     (clojure.data/diff
      (lookup/by-id instances "mitosis-prod")
