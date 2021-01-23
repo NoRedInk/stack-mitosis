@@ -23,9 +23,11 @@
   (with-redefs [aws/invoke (mock-invoke [{:DBInstanceIdentifier "a"}])]
     (is (= [{:DBInstanceIdentifier "a"}]
            (sut/databases identity))))
-  ;; (with-redefs [aws/invoke (mock-invoke [])]
-  ;;   (is (thrown-with-msg? java.lang.AssertionError #"Assert failed"
-  ;;                         (sut/databases identity))))
+  (with-redefs [aws/invoke (mock-invoke [])]
+    (is (= [] (sut/databases identity))))
+  (with-redefs [aws/invoke (fn [& _] {})]
+    (is (thrown-with-msg? java.lang.AssertionError #"Assert failed"
+                          (sut/databases identity))))
   )
 
 (deftest evaluate-plan

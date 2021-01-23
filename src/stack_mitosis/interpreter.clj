@@ -36,9 +36,8 @@
 
 (defn databases
   [rds]
-  ;; FIXME: if account has *no* databases this fails too, need a more nuanced
-  ;; postcondition here
-  ;; {:post [(seq %)]}
+  ;; exclude nil, but fresh account might return empty list
+  {:post [(sequential? %)]}
   (:DBInstances (invoke-logged! rds (op/describe))))
 
 ;; TODO: verify that "old-" database copies do not exist before running
