@@ -6,7 +6,7 @@
             [stack-mitosis.predict :as predict]))
 
 (def template
-  {:DBInstanceClass "db.t2.micro"
+  {:DBInstanceClass "db.t3.micro"
    :Engine "postgres" ;;"mysql"
    :StorageType "gp2" ;; ie ssd storage
    :AllocatedStorage 5
