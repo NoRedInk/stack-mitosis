@@ -5,3 +5,4 @@ test-results/
 /clj/
 /.cpcache/
 /resources/role.edn
+.direnv/
