@@ -2,12 +2,13 @@
   (:require [stack-mitosis.helpers :as helpers]
             [stack-mitosis.operations :as op]
             [stack-mitosis.planner :as plan]
+            [stack-mitosis.policy :as policy]
             [stack-mitosis.predict :as predict]))
 
 (def template
-  {:DBInstanceClass "db.t3.micro"
+  {:DBInstanceClass "db.t2.micro"
    :Engine "postgres" ;;"mysql"
-   :StorageType "gp2"
+   :StorageType "gp2" ;; ie ssd storage
    :AllocatedStorage 5
    :PubliclyAccessible false
    :MasterUsername "root"})
@@ -53,4 +54,8 @@
     (concat (plan/delete-tree state "mitosis-demo")
             (plan/delete-tree state "mitosis-prod"))))
 
-
+(comment
+  ;; Add fake arn to create template?
+  (policy/generate [] (create template))
+  ;; Fix this to actual return a functioning delete policy?
+  (policy/generate (predict/state [] (create template)) (destroy)))

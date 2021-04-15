@@ -1,11 +1,14 @@
 (ns stack-mitosis.cli
-  (:require [clojure.tools.cli :as cli]
-            [stack-mitosis.interpreter :as interpreter]
-            [stack-mitosis.planner :as plan]
-            [stack-mitosis.request :as r]
+  (:require [clojure.data.json :as json]
             [clojure.string :as str]
-            [stack-mitosis.sudo :as sudo]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.cli :as cli]
+            [clojure.tools.logging :as log]
+            [stack-mitosis.interpreter :as interpreter]
+            [stack-mitosis.lookup :as lookup]
+            [stack-mitosis.planner :as plan]
+            [stack-mitosis.policy :as policy]
+            [stack-mitosis.request :as r]
+            [stack-mitosis.sudo :as sudo]))
 
 ;; TODO: add max-timeout for actions
 ;; TODO: show attempt info like skipped steps in flight plan?
@@ -16,7 +19,9 @@
    ["-t" "--target DST" "Root identifier of database tree to copy over"]
    [nil "--restart CMD" "Blocking script to restart application."]
    ["-c" "--credentials FILENAME" "Credentials file in edn for iam assume-role"]
-   ["-p" "--plan", "Display expected flightplan for operation."]
+   ["-p" "--plan" "Display expected flightplan for operation."]
+   ["-i" "--iam-policy" "Generate IAM policy for planned actions."]
+   [nil "--restore-snapshot" "Always clone using snapshot restore."]
    ["-h" "--help"]])
 
 (defn parse-args [args]
@@ -49,27 +54,42 @@
   (let [rds (interpreter/client)
         instances (interpreter/databases rds)]
     (when (interpreter/verify-databases-exist instances [source target])
-      (let [tags (interpreter/list-tags rds instances target)
-            plan (plan/replace-tree instances source target
-                                    :restart restart :tags tags)]
-        (cond (:plan options)
-              (do (println (flight-plan (interpreter/check-plan instances plan)))
-                  true)
-              :else
-              (let [last-action (interpreter/evaluate-plan rds plan)]
-                (not (contains? last-action :ErrorResponse))))))))
+      (let [same-vpc (lookup/same-vpc?
+                      (lookup/by-id instances source)
+                      (lookup/by-id instances target))
+            use-restore-snapshot (or (:restore-snapshot options) (not same-vpc))
+            source-snapshot (if use-restore-snapshot
+                              (interpreter/latest-snapshot rds source)
+                              nil)]
+
+        (when (or (not use-restore-snapshot)
+                  (interpreter/verify-snapshot-exists instances [source target]
+                                                      source-snapshot))
+          (let [tags (interpreter/list-tags rds instances target)
+                plan (plan/replace-tree instances source source-snapshot target
+                                        :restart restart :tags tags)]
+            (cond (:plan options)
+                  (do (println (flight-plan (interpreter/check-plan instances plan)))
+                      true)
+                  (:iam-policy options)
+                  (do (json/pprint (policy/from-plan instances plan))
+                      true)
+                  :else
+                  (let [last-action (interpreter/evaluate-plan rds plan)]
+                    (not (contains? last-action :ErrorResponse))))))))))
 
 (defn -main [& args]
   (let [{:keys [ok exit-msg] :as options} (parse-args args)]
     (when exit-msg
       (println exit-msg)
       (System/exit (if ok 0 1)))
-    (System/exit (if (process options) 0 1))
-    ))
+    (System/exit (if (process options) 0 1))))
 
 (comment
   (process (parse-args ["--source" "mitosis-prod" "--target" "mitosis-demo"
                         "--plan" "--restart" "'./service-restart.sh'"]))
   (process (parse-args ["--source" "mitosis-prod" "--target" "mitosis-demo"
                         "--plan" "--credentials" "resources/role.edn"]))
+  (process (parse-args ["--source" "mitosis-prod" "--target" "mitosis-demo"
+                        "--iam-policy"]))
   (process (parse-args ["--source" "mitosis-prod" "--target" "mitosis-demo"])))

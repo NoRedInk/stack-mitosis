@@ -1,6 +1,7 @@
 (ns stack-mitosis.predict
   (:require [stack-mitosis.lookup :as lookup]
-            [stack-mitosis.request :as r]))
+            [stack-mitosis.request :as r]
+            [clojure.string :as str]))
 
 (defn attach
   [db child-id]
@@ -12,10 +13,21 @@
   (update db :ReadReplicaDBInstanceIdentifiers
           (partial remove #(= % child-id))))
 
+(defn predict-arn
+  "Replace the database identifier at the end of the ARN with a new value.
+
+  See https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_Tagging.ARN.html
+  for documentation on RDS specific ARN generation."
+  [instance arn parent-id child-id]
+  (if arn
+    (assoc instance :DBInstanceArn
+           (str/replace arn (re-pattern (str ":" parent-id "$")) (str ":" child-id)))
+    instance))
+
 (defmulti predict
   "Predict contents of instances db after applying operation to instances.
 
-      (predict [instances op] _) => instances'
+      (predict [instances op]) => instances'
   "
   (fn [_ op] (get op :op)))
 
@@ -48,7 +60,8 @@
               (assoc :ReadReplicaSourceDBInstanceIdentifier parent)
               ;; remove sources replica list for new replica, and reset backup
               ;; retention to match what AWS does.
-              (dissoc :ReadReplicaDBInstanceIdentifiers :BackupRetentionPeriod)))))
+              (dissoc :ReadReplicaDBInstanceIdentifiers :BackupRetentionPeriod)
+              (predict-arn (:DBInstanceArn source) parent child)))))
 
 (defmethod predict :PromoteReadReplica
   [instances op]
@@ -64,6 +77,27 @@
             (update (lookup/position instances parent) detach child)
             (update (lookup/position instances child) promote))))))
 
+(defmethod predict :RestoreDBInstanceFromDBSnapshot
+  [instances op]
+  {:post [(lookup/exists? % (r/db-id op))]}
+  (let [source-id (->> op :meta :SourceDBInstance :DBInstanceIdentifier)
+        source-db (lookup/by-id instances source-id)
+        target-id (r/db-id op)
+        ;; We use the arn for some policy calculations, and we don't want it to
+        ;; end up being the source-arn
+        target-arn (-> source-db :DBInstanceArn (str/split #":db:") first (str ":db:" target-id))]
+    (as-> op $
+      (:request $)
+      (dissoc $ :DBSnapshotIdentifier)
+      ;; This is not reeeally what happens, but replicating what happens is
+      ;; complicated. We're getting a DB in the new subnet, missing a few
+      ;; params, that are not going to be === the source params, but carry
+      ;; default values from RDS.
+      (merge source-db $)
+      (assoc $ :DBInstanceArn target-arn)
+      (dissoc $ :ReadReplicaDBInstanceIdentifiers)
+      (conj instances $))))
+
 (defmethod predict :ModifyDBInstance
   [instances op]
   {:pre [(lookup/exists? instances (r/db-id op))]}
@@ -72,7 +106,9 @@
         parent (lookup/parent instances current-id)]
     (letfn [(new-name [db]
               (merge (if new-id
-                       (assoc db :DBInstanceIdentifier new-id)
+                       (-> db
+                           (assoc :DBInstanceIdentifier new-id)
+                           (predict-arn (:DBInstanceArn db) current-id new-id))
                        db)
                      ;; merge in everything else in request
                      (dissoc (:request op)

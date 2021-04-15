@@ -38,14 +38,30 @@
                     {:SourceDBInstanceIdentifier source
                      :DBInstanceIdentifier replica})}))
 
+(defn restore-snapshot
+  ([snapshot-id source target] (restore-snapshot snapshot-id source target {}))
+  ([snapshot-id source target attributes]
+   {:op :RestoreDBInstanceFromDBSnapshot
+    :request (merge attributes
+                    {:DBSnapshotIdentifier snapshot-id
+                     :DBInstanceIdentifier target})
+    :meta {:SourceDBInstance source}}))
+
+(defn list-snapshots
+  ([target]
+   {:op :DescribeDBSnapshots
+    :request {:DBInstanceIdentifier target}}))
+
 (defn promote
   [id]
   {:op :PromoteReadReplica
    :request {:DBInstanceIdentifier id}})
 
-(defn describe [id]
-  {:op :DescribeDBInstances
-   :request {:DBInstanceIdentifier id}})
+(defn describe
+  ([] {:op :DescribeDBInstances})
+  ([id]
+   {:op :DescribeDBInstances
+    :request {:DBInstanceIdentifier id}}))
 
 (defn tags [db-arn]
   {:op :ListTagsForResource
@@ -66,7 +82,7 @@
 (defn blocking-operation?
   [action]
   (contains? #{:CreateDBInstance :CreateDBInstanceReadReplica
-               :PromoteReadReplica :ModifyDBInstance} (:op action)))
+               :PromoteReadReplica :ModifyDBInstance :RestoreDBInstanceFromDBSnapshot} (:op action)))
 
 (defn transition-to
   "Maps current rds status to in-progress, failed or done

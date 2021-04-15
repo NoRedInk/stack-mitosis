@@ -8,4 +8,4 @@ bin/kaocha --plugin cloverage \
            --plugin kaocha.plugin/junit-xml \
            --junit-xml-file test-results/kaocha/results.xml
 
-clojure -Aclj-kondo --lint src
+clojure -Aclj-kondo -M --lint src

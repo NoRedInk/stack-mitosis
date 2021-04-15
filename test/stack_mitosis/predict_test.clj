@@ -13,13 +13,14 @@
                                    (op/create {:DBInstanceIdentifier "a"})))))
 
 (deftest modify
-  (let [instances [{:DBInstanceIdentifier "a"}
-                   {:DBInstanceIdentifier "b"}]]
-    (is (= [{:DBInstanceIdentifier "a"}
-            {:DBInstanceIdentifier "new-name"}]
+  (let [instances [{:DBInstanceIdentifier "a" :DBInstanceArn "db:a"}
+                   {:DBInstanceIdentifier "b" :DBInstanceArn "db:b"}]]
+    (is (= [{:DBInstanceIdentifier "a" :DBInstanceArn "db:a"}
+            {:DBInstanceIdentifier "new-name" :DBInstanceArn "db:new-name"}]
            (p/predict instances (op/rename "b" "new-name"))))
-    (is (= [{:DBInstanceIdentifier "a"}
-            {:DBInstanceIdentifier "b" :MultiAZ true}]
+    (is (= [{:DBInstanceIdentifier "a" :DBInstanceArn "db:a"}
+            {:DBInstanceIdentifier "b" :DBInstanceArn "db:b"
+             :MultiAZ true}]
            (p/predict instances
                       (op/modify "b" {:MultiAZ true}))))))
 
@@ -40,10 +41,13 @@
                           (p/predict [] (op/promote "root"))))))
 
 (deftest create-replica
-  (let [instances [{:DBInstanceIdentifier "root" :MultiAZ false}]]
+  (let [instances [{:DBInstanceIdentifier "root" :DBInstanceArn "db:root"
+                    :MultiAZ false}]]
     (is (= [{:DBInstanceIdentifier "root" :MultiAZ false
+             :DBInstanceArn "db:root"
              :ReadReplicaDBInstanceIdentifiers ["replica"]}
             {:DBInstanceIdentifier "replica" :MultiAZ false :Port 123
+             :DBInstanceArn "db:replica"
              :ReadReplicaSourceDBInstanceIdentifier "root"}]
            (p/predict instances
                       {:op :CreateDBInstanceReadReplica
@@ -51,11 +55,13 @@
                                  :SourceDBInstanceIdentifier "root"
                                  :Port 123}})))
     (testing "propagate only *some* instance fields to replica"
-      (let [root {:DBInstanceIdentifier "root" :BackupRetentionPeriod 1
+      (let [root {:DBInstanceIdentifier "root"
+                  :DBInstanceArn "arn:aws:rds:us-west-2:1234567:db:root"
                   :ReadReplicaDBInstanceIdentifiers ["other-clone"]
-                  :Port 123}]
+                  :Port 123 :BackupRetentionPeriod 1}]
         (is (= [(update-in root [:ReadReplicaDBInstanceIdentifiers] conj "clone")
-                {:DBInstanceIdentifier "clone" :ReadReplicaSourceDBInstanceIdentifier "root" :Port 123}]
+                {:DBInstanceIdentifier "clone" :DBInstanceArn "arn:aws:rds:us-west-2:1234567:db:clone"
+                 :ReadReplicaSourceDBInstanceIdentifier "root" :Port 123}]
                (p/predict [root] (op/create-replica "root" "clone"))))))))
 
 (deftest delete

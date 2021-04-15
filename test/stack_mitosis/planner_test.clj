@@ -1,7 +1,8 @@
 (ns stack-mitosis.planner-test
   (:require [clojure.test :refer :all]
             [stack-mitosis.planner :as plan]
-            [stack-mitosis.operations :as op]))
+            [stack-mitosis.operations :as op]
+            [stack-mitosis.lookup :as lookup]))
 
 (deftest list-tree
   (let [a {:DBInstanceIdentifier :a :ReadReplicaDBInstanceIdentifiers [:b]}
@@ -21,6 +22,13 @@
                     :ReadReplicaSourceDBInstanceIdentifier "target"}
                    {:DBInstanceIdentifier "b" :ReadReplicaSourceDBInstanceIdentifier "target"}
                    {:DBInstanceIdentifier "c" :ReadReplicaSourceDBInstanceIdentifier "b"}]
+        instances-different-vpc [{:DBInstanceIdentifier "source" :Iops 1000, :DBSubnetGroup {:VpcId "v1"}}
+                                 {:DBInstanceIdentifier "target" :ReadReplicaDBInstanceIdentifiers ["a" "b"] :Iops 500}
+                                 {:DBInstanceIdentifier "a" :ReadReplicaDBInstanceIdentifiers ["c"]
+                                  :ReadReplicaSourceDBInstanceIdentifier "target"}
+                                 {:DBInstanceIdentifier "b" :ReadReplicaSourceDBInstanceIdentifier "target"}
+                                 {:DBInstanceIdentifier "c" :ReadReplicaSourceDBInstanceIdentifier "b"}]
+        snapshot-id "rds:source-snapshot-2021-03-17"
         tags-target [(op/kv "k" "target")]
         tags-b [(op/kv "k" "b")]]
     (is (= [(op/create-replica "source" "temp-target" {:Iops 500 :Tags tags-target})
@@ -32,7 +40,21 @@
             (op/modify "temp-b" {})
             (op/create-replica "temp-b" "temp-c")
             (op/modify "temp-c" {})]
-           (plan/copy-tree instances "source" "target"
+           (plan/copy-tree instances "source" nil "target"
+                           (partial plan/aliased "temp")
+                           :tags {"target" tags-target
+                                  "b" tags-b})))
+    (is (= [(op/restore-snapshot snapshot-id
+                                 (lookup/by-id instances-different-vpc "source")
+                                 "temp-target" {:Iops 500 :Tags tags-target})
+            (op/enable-backups "temp-target")
+            (op/create-replica "temp-target" "temp-a")
+            (op/modify "temp-a" {:BackupRetentionPeriod 1})
+            (op/create-replica "temp-target" "temp-b" {:Tags tags-b})
+            (op/modify "temp-b" {})
+            (op/create-replica "temp-b" "temp-c")
+            (op/modify "temp-c" {})]
+           (plan/copy-tree instances-different-vpc "source" snapshot-id "target"
                            (partial plan/aliased "temp")
                            :tags {"target" tags-target
                                   "b" tags-b})))))
@@ -66,6 +88,7 @@
         [{:DBInstanceIdentifier "production"}
          {:DBInstanceIdentifier "staging" :ReadReplicaDBInstanceIdentifiers ["staging-replica"]}
          {:DBInstanceIdentifier "staging-replica" :ReadReplicaSourceDBInstanceIdentifier "staging"}]
+        snapshot-id "rds:production-2015-10-21"
         tags [(op/kv "Env" "Staging")]]
     (is (= [(op/create-replica "production" "temp-staging")
             (op/promote "temp-staging")
@@ -78,7 +101,7 @@
             (op/rename "temp-staging" "staging")
             (op/delete "old-staging-replica")
             (op/delete "old-staging")]
-           (plan/replace-tree instances "production" "staging")))
+           (plan/replace-tree instances "production" nil "staging")))
 
     (is (= [(op/create-replica "production" "temp-staging")
             (op/promote "temp-staging")
@@ -94,13 +117,43 @@
             (op/delete "old-staging-replica")
             (op/delete "old-staging")]
            (plan/replace-tree
-            [{:DBInstanceIdentifier "production"
+            [{:DBInstanceIdentifier "production" :ReadReplicaDBInstanceIdentifiers ["production-replica"]
+              :PreferredMaintenanceWindow "tue:01:00-tue:02:00"}
+             {:DBInstanceIdentifier "production-replica" :ReadReplicaSourceDBInstanceIdentifier "production"
               :PreferredMaintenanceWindow "tue:01:00-tue:02:00"}
              {:DBInstanceIdentifier "staging" :ReadReplicaDBInstanceIdentifiers ["staging-replica"]
               :PreferredMaintenanceWindow "tue:02:00-tue:03:00"}
              {:DBInstanceIdentifier "staging-replica" :ReadReplicaSourceDBInstanceIdentifier "staging"
               :PreferredMaintenanceWindow "tue:03:00-tue:04:00"}]
-            "production" "staging")))
+            "production" nil "staging")))
+
+    (is (= [(op/restore-snapshot snapshot-id {:DBInstanceIdentifier "production"
+                                              :DBInstanceArn "arn:db:production"
+                                              :PreferredMaintenanceWindow "tue:01:00-tue:02:00"
+                                              :ReadReplicaDBInstanceIdentifiers ["production-replica"]
+                                              :DBSubnetGroup {:VpcId "v1"}} "temp-staging")
+            (op/enable-backups "temp-staging"
+                               {:PreferredMaintenanceWindow "tue:02:00-tue:03:00" :MonitoringInterval 60})
+            (op/create-replica "temp-staging" "temp-staging-replica")
+            (op/modify "temp-staging-replica"
+                       {:PreferredMaintenanceWindow "tue:03:00-tue:04:00"})
+            (op/rename "staging-replica" "old-staging-replica")
+            (op/rename "staging" "old-staging")
+            (op/rename "temp-staging-replica" "staging-replica")
+            (op/rename "temp-staging" "staging")
+            (op/delete "old-staging-replica")
+            (op/delete "old-staging")]
+           (plan/replace-tree
+            [{:DBInstanceIdentifier "production" :DBInstanceArn "arn:db:production"
+              :ReadReplicaDBInstanceIdentifiers ["production-replica"]
+              :PreferredMaintenanceWindow "tue:01:00-tue:02:00" :DBSubnetGroup {:VpcId "v1"}}
+             {:DBInstanceIdentifier "production-replica" :ReadReplicaSourceDBInstanceIdentifier "production"
+              :PreferredMaintenanceWindow "tue:01:00-tue:02:00" :DBSubnetGroup {:VpcId "v1"}}
+             {:DBInstanceIdentifier "staging" :ReadReplicaDBInstanceIdentifiers ["staging-replica"]
+              :PreferredMaintenanceWindow "tue:02:00-tue:03:00" :MonitoringInterval 60}
+             {:DBInstanceIdentifier "staging-replica" :ReadReplicaSourceDBInstanceIdentifier "staging"
+              :PreferredMaintenanceWindow "tue:03:00-tue:04:00"}]
+            "production" snapshot-id "staging")))
 
     (is (= [(op/create-replica "production" "temp-staging" {:Tags tags})
             (op/promote "temp-staging")
@@ -114,7 +167,7 @@
             (op/shell-command "./restart.sh")
             (op/delete "old-staging-replica")
             (op/delete "old-staging")]
-           (plan/replace-tree instances "production" "staging"
+           (plan/replace-tree instances "production" nil "staging"
                               :restart "./restart.sh"
                               :tags {"staging" tags
                                      "staging-replica" tags})))))
@@ -128,6 +181,8 @@
            (plan/attempt instances (op/create {:DBInstanceIdentifier "a"}))))
     (is (= [:skip (plan/duplicate-instance "b")]
            (plan/attempt instances (op/create-replica "a" "b"))))
+    (is (= [:skip (plan/duplicate-instance "b")]
+           (plan/attempt instances (op/restore-snapshot "c" "a" "b"))))
 
     (is (= [:skip (plan/promoted-instance "a")]
            (plan/attempt instances (op/promote "a"))))

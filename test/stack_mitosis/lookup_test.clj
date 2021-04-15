@@ -55,3 +55,7 @@
             ;; :DBSubnetGroupName "subnet-group"
             }
            (lookup/post-create-replica-attributes instance)))))
+
+(deftest same-vpc?
+  (is (= true (lookup/same-vpc? {:DBSubnetGroup {:VpcId "a"}} {:DBSubnetGroup {:VpcId "a"}})))
+  (is (= false (lookup/same-vpc? {:DBSubnetGroup {:VpcId "a"}} {:DBSubnetGroup {:VpcId "b"}}))))

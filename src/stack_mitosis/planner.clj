@@ -28,10 +28,8 @@
        (zipmap ids)
        topological-sort))
 
-;; postgres does not allow replica of replica, so need to promote before
-;; replicating children
 (defn copy-tree
-  [instances source target alias-fn & {:keys [tags]}]
+  [instances source source-snapshot target alias-fn & {:keys [tags]}]
   (let [alias-tags
         (->> tags
              (map (fn [[db-id instance-tags]] [(alias-fn db-id) instance-tags]))
@@ -40,11 +38,19 @@
                                  (partial lookup/by-id instances))
                            (list-tree instances target))
         root-id (:DBInstanceIdentifier root)
-        root-attrs (lookup/clone-replica-attributes root (get alias-tags root-id))]
-    (into [(op/create-replica source root-id root-attrs)
-           (op/promote root-id)
-           ;; postgres only allows backups after promotion
-           (op/enable-backups root-id (lookup/post-create-replica-attributes root))]
+
+        source-instance (lookup/by-id instances source)
+        root-attrs (lookup/clone-replica-attributes root (get alias-tags root-id))
+        root-restore-attrs (lookup/restore-snapshot-attributes root (get alias-tags root-id))]
+    (into (if (nil? source-snapshot)
+            [(op/create-replica source root-id root-attrs)
+             ;; postgres does not allow replica of replica, so need to promote before
+             ;; replicating children
+             (op/promote root-id)
+             ;; postgres only allows backups after promotion
+             (op/enable-backups root-id (lookup/post-create-replica-attributes root))]
+            [(op/restore-snapshot source-snapshot source-instance root-id root-restore-attrs)
+             (op/enable-backups root-id (lookup/post-restore-snapshot-attributes root))])
           (mapcat
            (fn [instance]
              [(op/create-replica (:ReadReplicaSourceDBInstanceIdentifier instance)
@@ -72,12 +78,12 @@
        (map op/delete)))
 
 (defn replace-tree
-  [instances source target & {:keys [restart tags] :or {tags {}}}]
+  [instances source source-snapshot target & {:keys [restart tags] :or {tags {}}}]
   ;; actions in copy, rename & delete change the local instances db, so use
   ;; predict to update that db for calculating next set of operations by
   ;; applying computation thus far to the initial instances
   ;; TODO something something sequence monad
-  (let [copy (copy-tree instances source target
+  (let [copy (copy-tree instances source source-snapshot target
                         (partial aliased "temp")
                         :tags tags)
 
@@ -111,6 +117,9 @@
     [:skip (duplicate-instance (r/db-id action))]
     ;; catch error if replica has incorrect parent?
     (and (= op :CreateDBInstanceReadReplica)
+         (lookup/by-id instances (r/db-id action)))
+    [:skip (duplicate-instance (r/db-id action))]
+    (and (= op :RestoreDBInstanceFromDBSnapshot)
          (lookup/by-id instances (r/db-id action)))
     [:skip (duplicate-instance (r/db-id action))]
     (and (= op :PromoteReadReplica)

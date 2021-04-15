@@ -8,7 +8,7 @@ data parity with production in a throw-away environment.
 
 ## Process
 
-Suppose for testing or sales purposes it is necessary to maintain an independent application stack with it's own database, which needs to periodically refresh data from the production database. To simplify the illustration, this will focus on the changes to the [AWS RDS](https://aws.amazon.com/rds/) database replication graphs, and omit the application and other services it may depend on. 
+Suppose for testing or sales purposes it is necessary to maintain an independent application stack with it's own database, which needs to periodically refresh data from the production database. To simplify the illustration, this will focus on the changes to the [AWS RDS](https://aws.amazon.com/rds/) database replication graphs, and omit the application and other services it may depend on.
 
 Consider two independent application stacks, production and demo, with primary databases `mitosis-prod` and `mitosis-demo` respectively. Each stack has a replication graph where a primary database is followed by one replica, ie `mitosis-prod` replicates to `mitosis-prod-replica` and `mitosis-demo` replicates to `mitosis-demo-replica`.
 
@@ -34,11 +34,13 @@ Once that is complete, it's safe to rename the `temp-` prefixed clones back to `
 
 ![img](doc/img/rename-2.png)
 
- However, as this is a DNS swap, the application is likely still connected to the original `old-mitosis-demo`. By specifying a restart script, stack-mitosis can force the demo application to restart, and connect to the newly created `mitosis-demo` with fresh data from production. Once it has restarted the application successfully, it deletes the `old-` prefixed database instances from the original demo replication graph.
+However, as this is a DNS swap, the application is likely still connected to the original `old-mitosis-demo`. By specifying a restart script, stack-mitosis can force the demo application to restart, and connect to the newly created `mitosis-demo` with fresh data from production. Once it has restarted the application successfully, it deletes the `old-` prefixed database instances from the original demo replication graph.
 
 ![img](doc/img/final.png)
 
 Note that this replication graph is a simple case, but it supports replacing arbitrarily complex replication graphs on RDS and has been verified with mysql and postgres database engines. The postgres engine on RDS only allows multiple replicas of a single primary, but the Mysql engine on RDS allows cascading replicas of replicas. See the AWS documentation for [working with RDS read replicas](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ReadRepl.html) for more information on these limitations.
+
+In the case where source and target instances live in different VPCs, or in case `--restore-snapshot` is used, the first instance (`temp-mitosis-demo` here) is created by restoring the latest available snapshot, instead of using replication. This also skips the promote replica step. All other steps remain the same.
 
 # Install
 
@@ -76,12 +78,14 @@ Hopefully in the future this can be parsed directly from the `AWS_CONFIG` file.
     clj -m stack-mitosis.cli \
         --source mitosis-production --target mitosis-staging \
         --restart "./restart-service.sh"
-        --credentials resources/role.edn
+        [--credentials resources/role.edn]
         [--plan]
+        [--iam-policy]
+        [--restore-snapshot]
 
 ## Flight Plan
 
-The `--plan` flag will give a flight plan showing the expected list of API calls it's planning on executing against the Amazon API. 
+The `--plan` flag will give a flight plan showing the expected list of API calls it's planning on executing against the Amazon API.
 
 ```
 $ clj -m stack-mitosis.cli --source mitosis-prod --target mitosis-demo --plan
@@ -112,7 +116,76 @@ Flight plan:
 
 Note that for many cases, even if the clone process is interrupted, the flight plan will show steps it will try to execute again, and steps it will skip because it has detected that the instance has already been created or modified to the right attribute values. In other words, it tries to pickup where it left-off if there is a failure.
 
+## IAM Policy Generation
+
+Stack-mitosis can also generate an IAM policy for an automated user to update a particular environment. The policy uses the database names from the planned changeset to calculate these minimal permissions. While they have been elided from the example below, the ARNs are locked to the specific account & region used.
+
+```
+$ clj -m stack-mitosis.cli --source mitosis-prod --target mitosis-demo --iam-policy
+{"Version":"2012-10-17",
+ "Statement":
+ [{"Effect":"Allow",
+   "Action":["rds:DescribeDBInstances", "rds:ListTagsForResource"],
+   "Resource":["arn:aws:rds:*:*:db:*"]},
+  {"Effect":"Allow",
+   "Action":["rds:CreateDBInstanceReadReplica"],
+   "Resource":
+   ["arn:aws:rds:*:*:og:*", "arn:aws:rds:*:*:pg:*",
+    "arn:aws:rds:*:*:subgrp:*",
+    "arn:aws:rds:*:*:db:mitosis-prod",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo-replica"]},
+  {"Effect":"Allow",
+   "Action":["rds:AddTagsToResource"],
+   "Resource":
+   ["arn:aws:rds:*:*:db:temp-mitosis-demo",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo-replica"]},
+  {"Effect":"Allow",
+   "Action":["rds:PromoteReadReplica"],
+   "Resource":
+   ["arn:aws:rds:*:*:db:temp-mitosis-demo"]},
+  {"Effect":"Allow",
+   "Action":["rds:ModifyDBInstance"],
+   "Resource":
+   ["arn:aws:rds:*:*:og:*", "arn:aws:rds:*:*:pg:*",
+    "arn:aws:rds:*:*:secgrp:*", "arn:aws:rds:*:*:subgrp:*",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:old-mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:mitosis-demo",
+    "arn:aws:rds:*:*:db:old-mitosis-demo"]},
+  {"Effect":"Allow",
+   "Action":["rds:RebootDBInstance"],
+   "Resource":
+   ["arn:aws:rds:*:*:db:temp-mitosis-demo",
+    "arn:aws:rds:*:*:db:temp-mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:mitosis-demo"]},
+  {"Effect":"Allow",
+   "Action":["rds:DeleteDBInstance"],
+   "Resource":
+   ["arn:aws:rds:*:*:db:old-mitosis-demo-replica",
+    "arn:aws:rds:*:*:db:old-mitosis-demo"]}]}
+```
+
+This ensures that a continuous integration or cronjob server like Jenkins can clone production to demo environments on a weekly basis restricted to the minimal permissions necessary. If a user needs to run stack-mitosis for multiple environments (demo, staging, random developer test environment), then a policy can be attached for each environment.
+
 # Testing
 
     bin/kaocha # basic unit tests
     bin/kaocha --plugin cloverage # with coverage output
+
+# Frequently Asked Questions
+
+## Why not use Cloudformation/Terraform
+
+Cloudformation and Terraform are wonderful tools focused on declarative architecture transformation from one steady state to another. Stack-mitosis is focused on safely cloning the contents of a database in one environment to another without changing from one steady state to another. As example, for an environment with production and demo environments, they both exist in the correct configuration before running stack-mitosis, and then after running stack-mitosis the configuration remains the same but the demo environment has a fresh copy of the data from production.
+
+I suspect this could also be accomplished using one of these declarative infrastructure tools by transitioning through multiple intervening states, but have not found any examples of anyone doing that.
+
+# License
+
+Copyright © 2019-2021 Charles L.G. Comstock
+
+Distributed under the BSD-3 Clause License (see LICENSE file)

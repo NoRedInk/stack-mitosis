@@ -5,3 +5,6 @@ test-results/
 /clj/
 /.cpcache/
 /resources/role.edn
+.terraform/
+*.tfstate
+*.tfstate.backup

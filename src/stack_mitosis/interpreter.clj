@@ -36,8 +36,9 @@
 
 (defn databases
   [rds]
-  {:post [(seq %)]}
-  (:DBInstances (invoke-logged! rds {:op :DescribeDBInstances})))
+  ;; exclude nil, but fresh account might return empty list
+  {:post [(sequential? %)]}
+  (:DBInstances (invoke-logged! rds (op/describe))))
 
 ;; TODO: verify that "old-" database copies do not exist before running
 (defn verify-databases-exist
@@ -47,6 +48,22 @@
       (do
         (log/error "Database(s) do not exist in region: "
                    (str/join ", " missing-ids))
+        false)
+      true)))
+
+(defn verify-snapshot-exists
+  [instances identifiers snapshot]
+  (let [instances (map (partial lookup/by-id instances) identifiers)
+        vpcs (map #(get-in % [:DBSubnetGroup :VpcId]) instances)
+        cross-vpc-mitosis (-> vpcs distinct count (> 1))]
+    (if (and cross-vpc-mitosis (not snapshot))
+      (do
+        (log/error
+         (str/join "\n" ["Source database has no snapshots." ""
+                         (str "Source and target databases are in different VPCs."
+                              " When that happens, stack-mitosis uses "
+                              "RestoreDBInstanceFromDBSnapshot to be able to"
+                              " clone the source database to the target VPC.")]))
         false)
       true)))
 
@@ -60,6 +77,15 @@
                     db-id (:DBInstanceIdentifier instance)]
                 [db-id (:TagList (invoke-logged! rds (op/tags arn)))])))
        (into {})))
+
+(defn latest-snapshot
+  "Returns the latest snapshot for an instance"
+  [rds target]
+  (->> (invoke-logged! rds (op/list-snapshots target))
+       (:DBSnapshots)
+       (sort-by :SnapshotCreateTime)
+       (last)
+       (:DBSnapshotIdentifier)))
 
 (defn describe
   [rds id]
@@ -117,7 +143,7 @@
   (sudo/sudo-provider (sudo/load-role "resources/role.edn"))
   (def rds (client))
   (-> (predict/state [] (example/create example/template))
-      (plan/replace-tree "mitosis-prod" "mitosis-demo"))
+      (plan/replace-tree "mitosis-prod" "mitosis-demo" nil))
 
   (interpret rds (op/shell-command "echo restart"))
   (evaluate-plan rds [(op/shell-command "true") (op/shell-command "false")
@@ -125,7 +151,7 @@
 
   ;; check plan
   (let [state (databases rds)]
-    (check-plan state (plan/replace-tree state "mitosis-prod" "mitosis-demo")))
+    (check-plan state (plan/replace-tree state "mitosis-prod" "mitosis-demo" nil)))
 
   ;; create a copy of mitosis-prod tree
   (let [state (databases rds)]
