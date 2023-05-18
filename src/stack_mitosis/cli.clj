@@ -22,6 +22,7 @@
    ["-p" "--plan" "Display expected flightplan for operation."]
    ["-i" "--iam-policy" "Generate IAM policy for planned actions."]
    [nil "--restore-snapshot" "Always clone using snapshot restore."]
+   [nil "--use-continuous-backup" "Use the first available continuous backup"]
    ["-h" "--help"]])
 
 (defn parse-args [args]
