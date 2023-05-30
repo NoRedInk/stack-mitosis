@@ -52,7 +52,7 @@
     (let [role (sudo/load-role creds)]
       (log/infof "Assuming role %s" (:role-arn role))
       (sudo/sudo-provider role)))
-  (let [rds (interpreter/client)
+  (let [rds (interpreter/rds-client)
         instances (interpreter/databases rds)]
     (when (interpreter/verify-databases-exist instances [source target])
       (let [same-vpc (lookup/same-vpc?

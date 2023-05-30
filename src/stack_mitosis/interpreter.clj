@@ -14,7 +14,7 @@
             [stack-mitosis.wait :as wait]))
 
 ;; TODO: thread this client to all that use it
-(defn client
+(defn rds-client
   []
   (aws/client {:api :rds :credentials-provider (sudo/provider)}))
 
@@ -141,7 +141,7 @@
 
 (comment
   (sudo/sudo-provider (sudo/load-role "resources/role.edn"))
-  (def rds (client))
+  (def rds (rds-client))
   (-> (predict/state [] (example/create example/template))
       (plan/replace-tree "mitosis-prod" "mitosis-demo" nil))
 
