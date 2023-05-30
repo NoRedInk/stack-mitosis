@@ -1,7 +1,7 @@
 (ns stack-mitosis.planner-test
   (:require [clojure.test :refer :all]
             [stack-mitosis.planner :as plan]
-            [stack-mitosis.operations :as op]
+            [stack-mitosis.rds-operations :as op]
             [stack-mitosis.lookup :as lookup]))
 
 (deftest list-tree

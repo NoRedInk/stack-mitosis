@@ -4,7 +4,7 @@
             [stack-mitosis.helpers :as helpers
              :refer [bfs-tree-seq topological-sort update-if]]
             [stack-mitosis.lookup :as lookup]
-            [stack-mitosis.operations :as op]
+            [stack-mitosis.rds-operations :as op]
             [stack-mitosis.predict :as predict]
             [stack-mitosis.request :as r]))
 

@@ -1,6 +1,6 @@
 (ns stack-mitosis.example-environment
   (:require [stack-mitosis.helpers :as helpers]
-            [stack-mitosis.operations :as op]
+            [stack-mitosis.rds-operations :as op]
             [stack-mitosis.planner :as plan]
             [stack-mitosis.policy :as policy]
             [stack-mitosis.predict :as predict]))

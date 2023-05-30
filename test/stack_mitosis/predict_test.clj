@@ -1,6 +1,6 @@
 (ns stack-mitosis.predict-test
   (:require [stack-mitosis.predict :as p]
-            [stack-mitosis.operations :as op]
+            [stack-mitosis.rds-operations :as op]
             [clojure.test :refer :all]))
 
 (deftest create

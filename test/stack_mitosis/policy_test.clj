@@ -1,6 +1,6 @@
 (ns stack-mitosis.policy-test
   (:require [clojure.test :as t :refer [deftest is]]
-            [stack-mitosis.operations :as op]
+            [stack-mitosis.rds-operations :as op]
             [stack-mitosis.policy :as sut]
             [stack-mitosis.planner :as plan]))
 

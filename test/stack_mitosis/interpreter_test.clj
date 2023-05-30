@@ -3,7 +3,7 @@
             [clojure.test :refer :all]
             [clojure.tools.logging.test :as tlog]
             [stack-mitosis.interpreter :as sut]
-            [stack-mitosis.operations :as op]
+            [stack-mitosis.rds-operations :as op]
             [cognitect.aws.client.api :as aws]))
 
 (defn- eval-plan [ops]

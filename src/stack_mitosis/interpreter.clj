@@ -5,7 +5,7 @@
             [cognitect.aws.client.api :as aws]
             [stack-mitosis.example-environment :as example]
             [stack-mitosis.lookup :as lookup]
-            [stack-mitosis.operations :as op]
+            [stack-mitosis.rds-operations :as op]
             [stack-mitosis.planner :as plan]
             [stack-mitosis.predict :as predict]
             [stack-mitosis.request :as r]

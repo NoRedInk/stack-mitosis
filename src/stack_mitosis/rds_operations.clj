@@ -1,4 +1,4 @@
-(ns stack-mitosis.operations
+(ns stack-mitosis.rds-operations
   (:require [clojure.tools.logging :as log]))
 
 (defn delete

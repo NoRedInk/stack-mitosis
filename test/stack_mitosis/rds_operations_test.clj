@@ -1,5 +1,5 @@
-(ns stack-mitosis.operations-test
-  (:require [stack-mitosis.operations :as op]
+(ns stack-mitosis.rds-operations-test
+  (:require [stack-mitosis.rds-operations :as op]
             [clojure.tools.logging.test :as test-log]
             [clojure.test :refer :all]))
 
@@ -11,15 +11,15 @@
 (deftest transition-to
   (test-log/with-log
     (is (= :in-progress (op/transition-to {})))
-    (is (test-log/logged? 'stack-mitosis.operations :error
+    (is (test-log/logged? 'stack-mitosis.rds-operations :error
                           "Unknown or missing db instance status from {}")))
   (test-log/with-log
     (is (= :in-progress (op/transition-to {:DBInstanceStatus nil})))
-    (is (test-log/logged? 'stack-mitosis.operations :error
+    (is (test-log/logged? 'stack-mitosis.rds-operations :error
                           "Unknown or missing db instance status from {:DBInstanceStatus nil}")))
   (test-log/with-log
     (is (= :in-progress (op/transition-to {:DBInstanceStatus ""})))
-    (is (test-log/logged? 'stack-mitosis.operations :error
+    (is (test-log/logged? 'stack-mitosis.rds-operations :error
                           "Unknown or missing db instance status from {:DBInstanceStatus }")))
   (is (= :done (op/transition-to {:DBInstanceStatus "available"})))
   (is (= :failed (op/transition-to {:DBInstanceStatus "failed"})))

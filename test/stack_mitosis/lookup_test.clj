@@ -1,7 +1,7 @@
 (ns stack-mitosis.lookup-test
   (:require [stack-mitosis.lookup :as lookup]
             [clojure.test :refer :all]
-            [stack-mitosis.operations :as op]))
+            [stack-mitosis.rds-operations :as op]))
 
 (deftest by-id
   (let [instance {:DBInstanceIdentifier :foo}]
