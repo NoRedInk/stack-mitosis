@@ -44,6 +44,12 @@ In the case where source and target instances live in different VPCs, or in case
 
 # Install
 
+## Nix-based
+
+We provide `clj` + `clojure` via the included `shell.nix`.
+
+## Legacy
+
 After installing a JDK, follow the [clojure install
 instructions](https://clojure.org/guides/getting_started) for your environment
 to ensure `clj` and `clojure` are in path.
@@ -61,9 +67,10 @@ In order to support that the following environment variables need to be present;
 `AWS_CONFIG_FILE`, `AWS_CREDENTIAL_PROFILES_FILE` should be set to specify any
 credentials other than `.aws/credentials`. For the initial handshake with AWS,
 credentials are needed from those files, or from environment variables,
-`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION`. In order to
-select an assumed role using an MFA token, for now a `role.edn` file should be
-specified with the following values:
+`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION`.
+
+You can set those up using `awsudo` if you're using the provided `shell.nix`, else
+you'll need to provide a `role.edn` file with the following values:
 
 ```
 {:mfa-serial "arn:aws:iam::1234:mfa/username"
@@ -71,17 +78,16 @@ specified with the following values:
  :region "us-west-1"}
 ```
 
-Hopefully in the future this can be parsed directly from the `AWS_CONFIG` file.
-
 # Usage
-
-    clj -m stack-mitosis.cli \
+```
+    [awsudo] clj -M -m stack-mitosis.cli \
         --source mitosis-production --target mitosis-staging \
         --restart "./restart-service.sh"
         [--credentials resources/role.edn]
         [--plan]
         [--iam-policy]
         [--restore-snapshot]
+```
 
 ## Flight Plan
 
