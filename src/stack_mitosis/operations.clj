@@ -34,7 +34,9 @@
   ([source replica] (create-replica source replica {}))
   ([source replica attributes]
    {:op :CreateDBInstanceReadReplica
-    :request (merge attributes
+    ;; when creating a replica in the same region as the primary, you must not specify the kms key id.
+    ;; the replica will inherit the same key as the primary automatically
+    :request (merge (dissoc attributes :KmsKeyId)
                     {:SourceDBInstanceIdentifier source
                      :DBInstanceIdentifier replica})}))
 
